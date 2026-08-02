@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext): void {
         catalogWatcher?.dispose();
       },
     },
-    vscode.window.registerTreeDataProvider("classroomOneClickInstall.sidebar", provider),
+    vscode.window.registerTreeDataProvider("vansClassroomInstall.sidebar", provider),
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {
       void courseLane.runAction(actionId);
     }),

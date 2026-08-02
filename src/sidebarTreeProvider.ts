@@ -9,10 +9,10 @@ import type { EnvironmentToolId } from "./toolProbe";
 import { buildSidebarShell, type SidebarLaneId } from "./sidebarShell";
 import { workspaceDisplayName } from "./workspaceDisplayName";
 
-export const RUN_INSTALL_ACTION_COMMAND = "classroomOneClickInstall.runInstallAction";
-export const RECHECK_ENVIRONMENT_COMMAND = "classroomOneClickInstall.recheckEnvironment";
+export const RUN_INSTALL_ACTION_COMMAND = "vansClassroomInstall.runInstallAction";
+export const RECHECK_ENVIRONMENT_COMMAND = "vansClassroomInstall.recheckEnvironment";
 export const INSTALL_ENVIRONMENT_TOOL_COMMAND =
-  "classroomOneClickInstall.installEnvironmentTool";
+  "vansClassroomInstall.installEnvironmentTool";
 
 type SidebarNode =
   | { kind: "workspace"; label: string }

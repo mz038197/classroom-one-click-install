@@ -6,7 +6,7 @@ describe("buildSidebarShell", () => {
   it("places Environment Lane above Course Lane with workspace label", () => {
     const shell = buildSidebarShell("my-course-project");
 
-    assert.equal(shell.title, "課堂一鍵安裝");
+    assert.equal(shell.title, "凡思課堂安裝");
     assert.equal(shell.workspaceLabel, "工作區：my-course-project");
     assert.deepEqual(
       shell.lanes.map((lane) => lane.id),

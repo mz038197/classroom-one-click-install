@@ -1,9 +1,10 @@
 {
-  "name": "classroom-one-click-install",
-  "displayName": "課堂一鍵安裝",
+  "name": "vans-classroom-install",
+  "displayName": "凡思課堂安裝",
   "description": "課堂側邊欄：檢查／安裝環境工具，並一鍵執行本課安裝動作。",
   "version": "0.0.1",
-  "publisher": "peas-agent",
+  "publisher": "vans-coding",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -11,38 +12,38 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:classroomOneClickInstall.sidebar"
+    "onView:vansClassroomInstall.sidebar"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "classroomOneClickInstall.runInstallAction",
+        "command": "vansClassroomInstall.runInstallAction",
         "title": "執行本課安裝動作"
       },
       {
-        "command": "classroomOneClickInstall.recheckEnvironment",
+        "command": "vansClassroomInstall.recheckEnvironment",
         "title": "重新檢查環境工具"
       },
       {
-        "command": "classroomOneClickInstall.installEnvironmentTool",
+        "command": "vansClassroomInstall.installEnvironmentTool",
         "title": "安裝／修復環境工具"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "classroomOneClickInstall",
-          "title": "課堂一鍵安裝",
+          "id": "vansClassroomInstall",
+          "title": "凡思課堂安裝",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "classroomOneClickInstall": [
+      "vansClassroomInstall": [
         {
-          "id": "classroomOneClickInstall.sidebar",
-          "name": "課堂一鍵安裝"
+          "id": "vansClassroomInstall.sidebar",
+          "name": "凡思課堂安裝"
         }
       ]
     }
