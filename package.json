@@ -1,0 +1,48 @@
+{
+  "name": "classroom-one-click-install",
+  "displayName": "課堂一鍵安裝",
+  "description": "課堂側邊欄：檢查／安裝環境工具，並一鍵執行本課安裝動作。",
+  "version": "0.0.1",
+  "publisher": "peas-agent",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:classroomOneClickInstall.sidebar"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "classroomOneClickInstall",
+          "title": "課堂一鍵安裝",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "classroomOneClickInstall": [
+        {
+          "id": "classroomOneClickInstall.sidebar",
+          "name": "課堂一鍵安裝"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test out/test/**/*.test.js",
+    "typecheck": "tsc -p ./ --noEmit",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.8.2"
+  }
+}

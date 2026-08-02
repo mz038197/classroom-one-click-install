@@ -1,0 +1,13 @@
+.vscode/**
+.scratch/**
+src/**
+docs/**
+node_modules/**
+out/test/**
+**/*.ts
+**/*.map
+.gitignore
+tsconfig.json
+CONTEXT.md
+**/tsconfig.json
+**/*.test.js
