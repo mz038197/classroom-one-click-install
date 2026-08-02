@@ -22,7 +22,7 @@
   - Course Catalog 住在**專案內設定檔**
   - 執行時：整合終端機跑指令；側邊欄同步進行中／成功／失敗
   - OS：Windows ＋ Mac（Linux 非 MVP）
-  - 發佈：長遠市集；課堂 MVP 先 **VSIX 側載**
+  - 發佈：VS Code **Visual Studio Marketplace** 為主；**VSIX 側載**備援；不上 Open VSX（見票 10／ADR 0002）
 
 ## Decisions so far
 
@@ -35,13 +35,14 @@
 - [Prototype: 側邊欄資訊架構草圖](./issues/07-prototype-sidebar-ia.md) — 採變體 A（環境在上、本課在下）；確認框／重開終端／禁用／成敗狀態見原型檔。
 - [Grilling: 產品規格大綱與完成定義](./issues/08-grilling-spec-outline-dod.md) — 規格在 `docs/spec.md`；十章大綱；DoD＝寫齊並鏈結決策／≥5 驗收條，不實作擴充功能。
 - [Task: 撰寫 docs/spec.md](./issues/09-task-write-spec.md) — 已交付十章規格與 8 條驗收標準於 `docs/spec.md`。
+- [Grilling: 上架 VSIX 到市集](./issues/10-grilling-marketplace-publish.md) — 只上 VS Marketplace；市集為主、側載備援；MIT＋公開 repo；`0.1.0`；`v*` tag Actions publish＋Release VSIX；市集文案僅繁中／只寫 VS Code。
 
 ## Not yet specified
 
 
 - 校園網／proxy／離線時，git＋uv 安裝動作怎麼降級或提示
 - 多根工作區（multi-root）要以哪個資料夾當「目前專案」
-- 市集上架文案、圖示、擴充功能 id／顯示名稱
+- 市集分類／關鍵字微調
 - 介面語言（僅繁中／可英）
 - 安裝失敗後的重試／部分成功（例如三個動作點了兩個）的產品規則
 

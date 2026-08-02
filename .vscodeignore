@@ -1,4 +1,5 @@
 .vscode/**
+.github/**
 .scratch/**
 src/**
 docs/**

@@ -9,27 +9,15 @@
 - 領域用語：[`CONTEXT.md`](./CONTEXT.md)
 - Wayfinder 地圖：[`.scratch/classroom-one-click-install/map.md`](./.scratch/classroom-one-click-install/map.md)
 - 示例 Course Catalog：[`samples/classroom-installs.yaml`](./samples/classroom-installs.yaml)
+- 發佈決策：[ADR 0002](./docs/adr/0002-vs-marketplace-publish.md)
 
-## 課堂使用（VSIX 側載）
+## 課堂使用（VS Code：市集為主）
 
-MVP **發佈路徑是 VSIX 側載**（不上架市集）。老師打包後把 `.vsix` 與示例 catalog 交給學生即可，學生無需本機開發環境。
+**主路徑**：學生在 **VS Code** 擴充功能市集搜尋「凡思課堂安裝」（id：`vans-coding.vans-classroom-install`）並安裝。
 
-### 老師：打包 VSIX
+**備援**：當市集不可用、需釘某一包、或使用 Cursor 時，改走下方 **VSIX 側載**。
 
-```bash
-npm install
-npm run package
-```
-
-此指令會編譯並以 `@vscode/vsce` 打包（已驗證：成功時根目錄出現 `.vsix`）。產物名稱為 `vans-classroom-install-<version>.vsix`（例如 `vans-classroom-install-0.0.1.vsix`；`*.vsix` 已列在 `.gitignore`，請自行發放，不必提交）。將該檔與 `samples/classroom-installs.yaml`（或本課自訂 catalog）一併交給學生。
-
-### 學生／老師：安裝擴充功能
-
-1. 取得 `.vsix` 檔。
-2. 在 **VS Code**：命令面板 → `Extensions: Install from VSIX…` → 選檔。  
-   在 **Cursor**：同樣走「從 VSIX 安裝」；若介面用語不同，到 Extensions 視圖找 Install from VSIX。
-3. 重新載入視窗（若提示）。
-4. 活動列應出現「凡思課堂安裝」。
+市集安裝後，編輯器可能自動更新擴充功能；一般課堂接受自動更新。若某次課必須全員同版，改發當日 GitHub Release 上的 `.vsix` 側載。
 
 ### 學生：本課 Catalog
 
@@ -37,9 +25,43 @@ npm run package
 2. 側邊欄上方為 Environment Lane（uv／git／Node）：未就緒就「安裝」，裝完依提示**重開終端**再「重新檢查」。
 3. 下方 Course Lane 會列出本課動作；點選 → 確認完整 command → 在整合終端機執行。
 
+## 備援：VSIX 側載
+
+適用：Cursor、離線、市集異常，或老師要發固定版本。
+
+### 取得 VSIX
+
+- **建議**：到 GitHub Releases 下載對應 tag（如 `v0.1.0`）的 `.vsix`。
+- **本機打包**：
+
+```bash
+npm install
+npm run package
+```
+
+產物名稱為 `vans-classroom-install-<version>.vsix`（`*.vsix` 已列在 `.gitignore`，請自行發放，不必提交）。將該檔與 `samples/classroom-installs.yaml`（或本課自訂 catalog）一併交給學生。
+
+### 安裝擴充功能
+
+1. 取得 `.vsix` 檔。
+2. 在 **VS Code**：命令面板 → `Extensions: Install from VSIX…` → 選檔。  
+   在 **Cursor**：同樣走「從 VSIX 安裝」；若介面用語不同，到 Extensions 視圖找 Install from VSIX。
+3. 重新載入視窗（若提示）。
+4. 活動列應出現「凡思課堂安裝」。
+
 ### Cursor 相容
 
-文件**不保證** Cursor 與 VS Code 行為完全一致；課堂前請在目標 Cursor 版本**實測**側載、側邊欄、終端機執行與重新檢查。MVP 以 VS Code 擴充功能 API 為準，發佈仍為 VSIX 側載。
+市集頁與擴充功能說明**只保證 VS Code 市集安裝路徑**。Cursor 請用 VSIX 側載；文件**不保證**與 VS Code 行為完全一致，課堂前請在目標 Cursor 版本**實測**側載、側邊欄、終端機執行與重新檢查。
+
+## 發版（維護者）
+
+1. 確認 Marketplace Publisher `vans-coding` 已在你的**個人 Microsoft 帳號**下建立（獨享發佈權，非組織共用帳號）。
+2. 確認 `package.json` 的 `version` 已 bump（與即將打的 tag 一致，例如 `0.1.0` ↔ `v0.1.0`）。
+3. 以該帳號核發可發佈擴充功能的 Personal Access Token，存成 repo secret：`VSCE_PAT`。
+4. 推送 git tag：`git tag v0.1.0 && git push origin v0.1.0`。
+5. GitHub Actions 會：核對 tag 與 version → typecheck／測試 → 打包 → 發佈至 Visual Studio Marketplace → 建立 GitHub Release 並附上 `.vsix`。
+
+目前**不上架 Open VSX**；Cursor 不走市集。
 
 ## 開發
 

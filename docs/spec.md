@@ -16,7 +16,7 @@
 2. **Course Lane**：一鍵執行老師寫在工作區 `classroom-installs.yaml` 裡的本課安裝動作  
 
 指令在**整合終端機**執行；側邊欄同步進行中／成功／失敗。  
-目標使用者：課堂學生（操作）、老師（維護 catalog 與發 VSIX）。
+目標使用者：課堂學生（操作）、老師（維護 catalog；VS Code 學生走市集，必要時發 VSIX 備援）。
 
 ---
 
@@ -28,7 +28,7 @@
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：讀取工作區根目錄 `classroom-installs.yaml`，執行其中的整段 `command`  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
-- 發佈：課堂以 **VSIX 側載**；規格預留日後上架市集  
+- 發佈：VS Code 以 **Visual Studio Marketplace** 為主（`vans-coding.vans-classroom-install`）；**VSIX 側載**為備援（Cursor／離線／急救）。不上架 Open VSX。見 [ADR 0002](./adr/0002-vs-marketplace-publish.md)。
 
 ### 非範圍（MVP）
 
@@ -45,7 +45,7 @@
 
 - 校園網／proxy／離線降級  
 - 多根工作區要以哪個資料夾為準  
-- 市集文案、圖示、擴充功能 id  
+- 市集分類／關鍵字微調（身分、繁中文案、圖示已定：id `vans-coding.vans-classroom-install`）
 - 介面僅繁中或可英  
 - 多筆動作的部分成功／重試產品文案細節（單筆重試按鈕已在 UI 草圖中）  
 
@@ -213,7 +213,7 @@ actions:
 | 編輯器 | VS Code 擴充功能 API；Cursor 相容列入實測矩陣（文件無保證） |
 | 執行與結果 | 主路徑：Shell Integration（`executeCommand`＋`onDidEndTerminalShellExecution` 取 exit code）更新側邊欄。`sendText` 僅能標「已送出／未驗證」。跨 shell 要可靠可判定結果時可用 VS Code Task |
 | OS | MVP：Windows ＋ macOS |
-| 發佈 | 課堂 VSIX 側載；長遠市集 |
+| 發佈 | VS Code：Visual Studio Marketplace 為主；Sideload 備援；不上 Open VSX（[ADR 0002](./adr/0002-vs-marketplace-publish.md)） |
 | 詳情 | [研究 02](../.scratch/classroom-one-click-install/research/02-vscode-terminal-sidebar-apis.md)、[研究 01](../.scratch/classroom-one-click-install/research/01-toolchain-install-win-mac.md) |
 
 ---
@@ -246,3 +246,4 @@ actions:
 | [07](../.scratch/classroom-one-click-install/issues/07-prototype-sidebar-ia.md) | 側邊欄 IA |
 | [08](../.scratch/classroom-one-click-install/issues/08-grilling-spec-outline-dod.md) | 規格大綱與 DoD |
 | [09](../.scratch/classroom-one-click-install/issues/09-task-write-spec.md) | 撰寫本規格 |
+| [10](../.scratch/classroom-one-click-install/issues/10-grilling-marketplace-publish.md) | 市集發佈策略 |
