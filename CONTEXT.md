@@ -13,8 +13,8 @@ _Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（
 _Avoid_: 全域模組, 系統套件（太寬）
 
 **Course Catalog**:
-放在學生工作區內的策展清單檔，列出本課的 Install Action。
-_Avoid_: 遙控清單（MVP 不做）, 應用內建唯一清單
+放在學生工作區根目錄的策展清單檔 `classroom-installs.yaml`，以 `actions` 列出本課的 Install Action。
+_Avoid_: 遙控清單（MVP 不做）, 應用內建唯一清單, 多份清單（MVP 不做）
 
 **Environment Lane**:
 側邊欄中負責檢查／安裝 Environment Tool 的區塊。
@@ -23,5 +23,5 @@ _Avoid_: 遙控清單（MVP 不做）, 應用內建唯一清單
 側邊欄中列出 Course Catalog 並觸發 Install Action 的區塊。
 
 **Toolchain Ready**:
-Environment Tool 皆已偵測為可用（在 PATH 上可執行）的狀態。
-_Avoid_: 環境安裝完成（未說明偵測基準）
+uv、git、Node.js 三者皆透過終端機偵測為可用（找得到指令且版本命令成功）的總覽狀態；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
+_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目
