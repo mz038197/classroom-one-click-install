@@ -45,11 +45,20 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")],
     };
-    const nonce = randomNonce();
-    webview.html = getSidebarWebviewHtml(nonce, webview.cspSource);
+
+    const scriptUri = webview
+      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "sidebar.js"))
+      .toString();
+    webview.html = getSidebarWebviewHtml(webview.cspSource, scriptUri);
 
     webview.onDidReceiveMessage((raw: WebviewInbound) => {
       void this.onMessage(raw);
+    });
+
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        void this.postState();
+      }
     });
 
     webviewView.onDidDispose(() => {
@@ -111,13 +120,4 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
 
 function isToolId(value: unknown): value is EnvironmentToolId {
   return value === "uv" || value === "git" || value === "node";
-}
-
-function randomNonce(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let out = "";
-  for (let i = 0; i < 32; i++) {
-    out += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return out;
 }

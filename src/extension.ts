@@ -87,7 +87,11 @@ export function activate(context: vscode.ExtensionContext): void {
         catalogWatcher?.dispose();
       },
     },
-    vscode.window.registerWebviewViewProvider(SidebarWebviewProvider.viewType, provider),
+    vscode.window.registerWebviewViewProvider(
+      SidebarWebviewProvider.viewType,
+      provider,
+      { webviewOptions: { retainContextWhenHidden: true } },
+    ),
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {
       void courseLane.runAction(actionId);
     }),
