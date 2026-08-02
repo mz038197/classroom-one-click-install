@@ -10,6 +10,7 @@
 - Wayfinder 地圖：[`.scratch/classroom-one-click-install/map.md`](./.scratch/classroom-one-click-install/map.md)
 - 示例 Course Catalog：[`samples/classroom-installs.yaml`](./samples/classroom-installs.yaml)
 - 發佈決策：[ADR 0002](./docs/adr/0002-vs-marketplace-publish.md)
+- 發佈手冊（維護者）：[`docs/publishing.md`](./docs/publishing.md)
 
 ## 課堂使用（VS Code：市集為主）
 
@@ -55,11 +56,8 @@ npm run package
 
 ## 發版（維護者）
 
-1. 確認 Marketplace Publisher `vans-coding` 已在你的**個人 Microsoft 帳號**下建立（獨享發佈權，非組織共用帳號）。
-2. 確認 `package.json` 的 `version` 已 bump（與即將打的 tag 一致，例如 `0.1.0` ↔ `v0.1.0`）。
-3. 以該帳號核發可發佈擴充功能的 Personal Access Token，存成 repo secret：`VSCE_PAT`。
-4. 推送 git tag：`git tag v0.1.0 && git push origin v0.1.0`。
-5. GitHub Actions 會：核對 tag 與 version → typecheck／測試 → 打包 → 發佈至 Visual Studio Marketplace → 建立 GitHub Release 並附上 `.vsix`。
+日常：`package.json` version bump → `git tag vX.Y.Z` → `git push origin vX.Y.Z`（tag 須與 version 一致）。  
+首次設定 Publisher／PAT／`VSCE_PAT`、換 token、手動上傳與排錯：見 **[`docs/publishing.md`](./docs/publishing.md)**。
 
 目前**不上架 Open VSX**；Cursor 不走市集。
 
