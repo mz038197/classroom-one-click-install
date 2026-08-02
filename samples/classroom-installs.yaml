@@ -1,0 +1,19 @@
+# 示例 Course Catalog（對齊 docs/spec.md §4）
+# 複製到學生工作區根目錄後，Course Lane 會列出下列 Install Action。
+actions:
+  - id: peas-agent-tools
+    title: 安裝 peas-agent-tools
+    description: 從 GitHub 加入專案依賴（可升級）
+    command: >-
+      uv add --upgrade "peas-agent-tools @ git+https://github.com/mz038197/peas-agent-tools.git"
+
+  - id: peas-agent-runtime
+    title: 安裝 peas-agent-runtime
+    command: >-
+      uv add git+https://github.com/mz038197/peas-agent-runtime.git
+
+  - id: dataset-streamlit-shell
+    title: 安裝 dataset-streamlit-shell
+    description: 以 uvx 從 Git 套件執行安裝入口
+    command: >-
+      uvx --from git+https://github.com/mz038197/dataset-streamlit-shell-installer.git add-dataset-streamlit-shell --update

@@ -2,12 +2,17 @@
 .scratch/**
 src/**
 docs/**
-node_modules/**
+samples/**
+# yaml 的 browser 建置不進 extension host
+node_modules/yaml/browser/**
 out/test/**
 **/*.ts
 **/*.map
 .gitignore
 tsconfig.json
 CONTEXT.md
+README.md
+EXTENSION_README.md
 **/tsconfig.json
 **/*.test.js
+**/*.vsix
