@@ -1,12 +1,18 @@
 import * as vscode from "vscode";
 import type { ActionRunSnapshot } from "./actionRunState";
 import type { CourseLaneService } from "./courseLaneService";
-import type { EnvironmentLaneService } from "./environmentLane";
+import type {
+  EnvironmentLaneService,
+  EnvironmentToolUiStatus,
+} from "./environmentLane";
+import type { EnvironmentToolId } from "./toolProbe";
 import { buildSidebarShell, type SidebarLaneId } from "./sidebarShell";
 import { workspaceDisplayName } from "./workspaceDisplayName";
 
 export const RUN_INSTALL_ACTION_COMMAND = "classroomOneClickInstall.runInstallAction";
 export const RECHECK_ENVIRONMENT_COMMAND = "classroomOneClickInstall.recheckEnvironment";
+export const INSTALL_ENVIRONMENT_TOOL_COMMAND =
+  "classroomOneClickInstall.installEnvironmentTool";
 
 type SidebarNode =
   | { kind: "workspace"; label: string }
@@ -18,10 +24,11 @@ type SidebarNode =
     }
   | {
       kind: "env-tool";
-      toolId: string;
+      toolId: EnvironmentToolId;
       label: string;
       detail: string;
-      ready: boolean;
+      status: EnvironmentToolUiStatus;
+      actionLabel: "安裝" | "重新安裝／修復";
     }
   | {
       kind: "action";
@@ -73,13 +80,20 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
       return item;
     }
     if (element.kind === "env-tool") {
-      const prefix = element.ready ? "✓ " : "✗ ";
       const item = new vscode.TreeItem(
-        `${prefix}${element.label}`,
+        `${envPrefix(element.status)}${element.label}`,
         vscode.TreeItemCollapsibleState.None,
       );
-      item.description = element.detail;
-      item.contextValue = element.ready ? "env-tool:ready" : "env-tool:missing";
+      item.description = `${element.detail} · ${element.actionLabel}`;
+      item.contextValue = `env-tool:${element.status}`;
+      item.tooltip = `${element.label}\n${element.detail}`;
+      if (element.status !== "installing") {
+        item.command = {
+          command: INSTALL_ENVIRONMENT_TOOL_COMMAND,
+          title: element.actionLabel,
+          arguments: [element.toolId],
+        };
+      }
       return item;
     }
 
@@ -158,7 +172,8 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
         toolId: tool.id,
         label: tool.label,
         detail: tool.detail,
-        ready: tool.status === "ready",
+        status: tool.status,
+        actionLabel: tool.actionLabel,
       })),
     ];
     if (view.tip) {
@@ -216,9 +231,24 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
   }
 }
 
+function envPrefix(status: EnvironmentToolUiStatus): string {
+  switch (status) {
+    case "ready":
+      return "✓ ";
+    case "needs-reopen-terminal":
+      return "↻ ";
+    case "failed":
+      return "✗ ";
+    case "installing":
+      return "… ";
+    default:
+      return "✗ ";
+  }
+}
+
 function readyMark(
   view: ReturnType<EnvironmentLaneService["getView"]>,
-  id: "uv" | "git" | "node",
+  id: EnvironmentToolId,
 ): string {
   return view.tools.find((t) => t.id === id)?.status === "ready" ? "✓" : "✗";
 }

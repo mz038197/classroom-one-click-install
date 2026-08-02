@@ -23,6 +23,10 @@
       {
         "command": "classroomOneClickInstall.recheckEnvironment",
         "title": "重新檢查環境工具"
+      },
+      {
+        "command": "classroomOneClickInstall.installEnvironmentTool",
+        "title": "安裝／修復環境工具"
       }
     ],
     "viewsContainers": {

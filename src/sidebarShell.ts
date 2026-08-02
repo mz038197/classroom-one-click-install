@@ -23,7 +23,7 @@ export function buildSidebarShell(workspaceName: string): SidebarShell {
       {
         id: "environment",
         title: "環境工具",
-        placeholder: "uv／git／Node.js 偵測與重新檢查",
+        placeholder: "uv／git／Node.js 偵測、安裝與重新檢查",
       },
       {
         id: "course",

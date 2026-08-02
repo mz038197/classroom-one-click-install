@@ -1,15 +1,26 @@
 import * as vscode from "vscode";
 import { CATALOG_FILENAME, CourseLaneService } from "./courseLaneService";
+import {
+  confirmEnvironmentInstall,
+  detectInstallPlatform,
+  executeEnvironmentInstallPlan,
+} from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
 import { createDefaultProbeRunner } from "./probeRunner";
+import type { EnvironmentToolId } from "./toolProbe";
 import {
+  INSTALL_ENVIRONMENT_TOOL_COMMAND,
   RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
   SidebarTreeProvider,
 } from "./sidebarTreeProvider";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner());
+  const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
+    platform: detectInstallPlatform(),
+    confirm: confirmEnvironmentInstall,
+    execute: executeEnvironmentInstallPlan,
+  });
   const courseLane = new CourseLaneService(() => environmentLane.getReadiness());
   const provider = new SidebarTreeProvider(courseLane, environmentLane);
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
@@ -25,6 +36,21 @@ export function activate(context: vscode.ExtensionContext): void {
   const recheckEnvironment = async (): Promise<void> => {
     await environmentLane.recheck();
     refreshUi();
+  };
+
+  const installEnvironmentTool = async (toolId: EnvironmentToolId): Promise<void> => {
+    const result = await environmentLane.installTool(toolId);
+    refreshUi();
+    if (result === "ran") {
+      void vscode.window.showInformationMessage(
+        "安裝流程已結束。請重開整合終端機後再按「重新檢查」。",
+      );
+    } else if (result === "failed") {
+      const detail =
+        environmentLane.getView().tools.find((t) => t.id === toolId)?.detail ??
+        "安裝失敗";
+      void vscode.window.showErrorMessage(detail);
+    }
   };
 
   const watchCatalog = (): void => {
@@ -56,6 +82,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(RECHECK_ENVIRONMENT_COMMAND, () => {
       void recheckEnvironment();
     }),
+    vscode.commands.registerCommand(
+      INSTALL_ENVIRONMENT_TOOL_COMMAND,
+      (toolId: EnvironmentToolId) => {
+        void installEnvironmentTool(toolId);
+      },
+    ),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       watchCatalog();
       reloadCatalog();
