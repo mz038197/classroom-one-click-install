@@ -1,21 +1,35 @@
 import * as vscode from "vscode";
 import type { ActionRunSnapshot } from "./actionRunState";
 import type { CourseLaneService } from "./courseLaneService";
+import type { EnvironmentLaneService } from "./environmentLane";
 import { buildSidebarShell, type SidebarLaneId } from "./sidebarShell";
 import { workspaceDisplayName } from "./workspaceDisplayName";
 
 export const RUN_INSTALL_ACTION_COMMAND = "classroomOneClickInstall.runInstallAction";
+export const RECHECK_ENVIRONMENT_COMMAND = "classroomOneClickInstall.recheckEnvironment";
 
 type SidebarNode =
   | { kind: "workspace"; label: string }
   | { kind: "lane"; label: string; laneId: SidebarLaneId }
   | { kind: "message"; label: string; parentLaneId: SidebarLaneId }
   | {
+      kind: "recheck";
+      label: string;
+    }
+  | {
+      kind: "env-tool";
+      toolId: string;
+      label: string;
+      detail: string;
+      ready: boolean;
+    }
+  | {
       kind: "action";
       actionId: string;
       title: string;
       description?: string;
       run: ActionRunSnapshot;
+      disabledReason?: string;
     };
 
 export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode> {
@@ -24,7 +38,10 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  constructor(private readonly courseLane: CourseLaneService) {}
+  constructor(
+    private readonly courseLane: CourseLaneService,
+    private readonly environmentLane: EnvironmentLaneService,
+  ) {}
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
@@ -44,6 +61,42 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
     if (element.kind === "message") {
       const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
       item.contextValue = "message";
+      return item;
+    }
+    if (element.kind === "recheck") {
+      const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+      item.contextValue = "recheck";
+      item.command = {
+        command: RECHECK_ENVIRONMENT_COMMAND,
+        title: "重新檢查",
+      };
+      return item;
+    }
+    if (element.kind === "env-tool") {
+      const prefix = element.ready ? "✓ " : "✗ ";
+      const item = new vscode.TreeItem(
+        `${prefix}${element.label}`,
+        vscode.TreeItemCollapsibleState.None,
+      );
+      item.description = element.detail;
+      item.contextValue = element.ready ? "env-tool:ready" : "env-tool:missing";
+      return item;
+    }
+
+    if (element.disabledReason) {
+      const item = new vscode.TreeItem(
+        `⊘ ${element.title}`,
+        vscode.TreeItemCollapsibleState.None,
+      );
+      item.contextValue = "action:disabled";
+      item.description = element.disabledReason;
+      item.tooltip = [
+        element.description,
+        `id: ${element.actionId}`,
+        element.disabledReason,
+      ]
+        .filter(Boolean)
+        .join("\n");
       return item;
     }
 
@@ -82,14 +135,7 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
     }
 
     if (element.kind === "lane" && element.laneId === "environment") {
-      const lane = shell.lanes.find((l) => l.id === "environment");
-      return [
-        {
-          kind: "message",
-          label: lane?.placeholder ?? "（占位）",
-          parentLaneId: "environment",
-        },
-      ];
+      return this.environmentChildren();
     }
 
     if (element.kind === "lane" && element.laneId === "course") {
@@ -97,6 +143,28 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
     }
 
     return [];
+  }
+
+  private environmentChildren(): SidebarNode[] {
+    const view = this.environmentLane.getView();
+    const badge = view.toolchainReady
+      ? "Toolchain Ready：uv · git · Node 皆就緒"
+      : `Toolchain Ready：未齊（uv ${readyMark(view, "uv")} · git ${readyMark(view, "git")} · Node ${readyMark(view, "node")}）`;
+    const nodes: SidebarNode[] = [
+      { kind: "message", label: badge, parentLaneId: "environment" },
+      { kind: "recheck", label: "↻ 重新檢查" },
+      ...view.tools.map((tool) => ({
+        kind: "env-tool" as const,
+        toolId: tool.id,
+        label: tool.label,
+        detail: tool.detail,
+        ready: tool.status === "ready",
+      })),
+    ];
+    if (view.tip) {
+      nodes.push({ kind: "message", label: view.tip, parentLaneId: "environment" });
+    }
+    return nodes;
   }
 
   private courseChildren(): SidebarNode[] {
@@ -135,6 +203,7 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
         title: action.title,
         description: action.description,
         run: action.run,
+        disabledReason: action.disabledReason,
       })),
     ];
   }
@@ -145,6 +214,13 @@ export class SidebarTreeProvider implements vscode.TreeDataProvider<SidebarNode>
     }));
     return buildSidebarShell(workspaceDisplayName(folders));
   }
+}
+
+function readyMark(
+  view: ReturnType<EnvironmentLaneService["getView"]>,
+  id: "uv" | "git" | "node",
+): string {
+  return view.tools.find((t) => t.id === id)?.status === "ready" ? "✓" : "✗";
 }
 
 function statusPrefix(run: ActionRunSnapshot): string {

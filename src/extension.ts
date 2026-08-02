@@ -1,17 +1,30 @@
 import * as vscode from "vscode";
 import { CATALOG_FILENAME, CourseLaneService } from "./courseLaneService";
+import { EnvironmentLaneService } from "./environmentLane";
+import { createDefaultProbeRunner } from "./probeRunner";
 import {
+  RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
   SidebarTreeProvider,
 } from "./sidebarTreeProvider";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const courseLane = new CourseLaneService();
-  const provider = new SidebarTreeProvider(courseLane);
+  const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner());
+  const courseLane = new CourseLaneService(() => environmentLane.getReadiness());
+  const provider = new SidebarTreeProvider(courseLane, environmentLane);
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
 
-  const reload = (): void => {
-    void courseLane.reload().then(() => provider.refresh());
+  const refreshUi = (): void => {
+    provider.refresh();
+  };
+
+  const reloadCatalog = (): void => {
+    void courseLane.reload().then(refreshUi);
+  };
+
+  const recheckEnvironment = async (): Promise<void> => {
+    await environmentLane.recheck();
+    refreshUi();
   };
 
   const watchCatalog = (): void => {
@@ -24,9 +37,9 @@ export function activate(context: vscode.ExtensionContext): void {
     catalogWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(folder, CATALOG_FILENAME),
     );
-    catalogWatcher.onDidCreate(reload);
-    catalogWatcher.onDidChange(reload);
-    catalogWatcher.onDidDelete(reload);
+    catalogWatcher.onDidCreate(reloadCatalog);
+    catalogWatcher.onDidChange(reloadCatalog);
+    catalogWatcher.onDidDelete(reloadCatalog);
   };
 
   context.subscriptions.push(
@@ -40,15 +53,20 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {
       void courseLane.runAction(actionId);
     }),
+    vscode.commands.registerCommand(RECHECK_ENVIRONMENT_COMMAND, () => {
+      void recheckEnvironment();
+    }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       watchCatalog();
-      reload();
+      reloadCatalog();
+      void recheckEnvironment();
     }),
-    courseLane.onDidChange(() => provider.refresh()),
+    courseLane.onDidChange(refreshUi),
   );
 
   watchCatalog();
-  reload();
+  reloadCatalog();
+  void recheckEnvironment();
 }
 
 export function deactivate(): void {

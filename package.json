@@ -19,6 +19,10 @@
       {
         "command": "classroomOneClickInstall.runInstallAction",
         "title": "執行本課安裝動作"
+      },
+      {
+        "command": "classroomOneClickInstall.recheckEnvironment",
+        "title": "重新檢查環境工具"
       }
     ],
     "viewsContainers": {

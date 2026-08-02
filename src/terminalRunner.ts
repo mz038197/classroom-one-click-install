@@ -13,7 +13,7 @@ function createTerminalAtWorkspaceRoot(cwd: string): vscode.Terminal {
   return vscode.window.createTerminal({ name: TERMINAL_NAME, cwd });
 }
 
-async function waitForShellIntegration(
+export async function waitForShellIntegration(
   terminal: vscode.Terminal,
 ): Promise<vscode.TerminalShellIntegration | undefined> {
   if (terminal.shellIntegration) {

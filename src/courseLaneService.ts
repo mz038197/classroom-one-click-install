@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
 import { ActionRunStateStore, type ActionRunSnapshot } from "./actionRunState";
+import {
+  disabledReasonForAction,
+  type ToolReadiness,
+} from "./actionDependencyGate";
 import { confirmThenRun } from "./confirmThenRun";
 import {
   parseCourseCatalog,
@@ -9,6 +13,11 @@ import { runInIntegratedTerminal } from "./terminalRunner";
 
 export const CATALOG_FILENAME = "classroom-installs.yaml";
 
+export type CourseLaneActionView = InstallAction & {
+  run: ActionRunSnapshot;
+  disabledReason?: string;
+};
+
 export type CourseLaneView =
   | { kind: "no-workspace" }
   | { kind: "missing"; message: string }
@@ -16,8 +25,12 @@ export type CourseLaneView =
   | {
       kind: "ready";
       workspaceRoot: string;
-      actions: Array<InstallAction & { run: ActionRunSnapshot }>;
+      actions: CourseLaneActionView[];
     };
+
+export type ReadinessProvider = () => ToolReadiness;
+
+const ALL_READY: ToolReadiness = { uv: true, git: true, node: true };
 
 export class CourseLaneService {
   private readonly store = new ActionRunStateStore();
@@ -26,6 +39,8 @@ export class CourseLaneService {
   private loadError: { kind: "missing" | "invalid"; message: string } | undefined;
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
+
+  constructor(private readonly readiness: ReadinessProvider = () => ALL_READY) {}
 
   getView(): CourseLaneView {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -38,13 +53,18 @@ export class CourseLaneService {
     if (this.loadError?.kind === "invalid") {
       return { kind: "invalid", message: this.loadError.message };
     }
+    const tools = this.readiness();
     return {
       kind: "ready",
       workspaceRoot: this.workspaceRoot ?? folder.uri.fsPath,
-      actions: this.actions.map((action) => ({
-        ...action,
-        run: this.store.get(action.id),
-      })),
+      actions: this.actions.map((action) => {
+        const disabledReason = disabledReasonForAction(action.command, tools);
+        return {
+          ...action,
+          run: this.store.get(action.id),
+          ...(disabledReason ? { disabledReason } : {}),
+        };
+      }),
     };
   }
 
@@ -94,6 +114,11 @@ export class CourseLaneService {
       return;
     }
     if (this.store.get(actionId).status === "running") {
+      return;
+    }
+    const disabledReason = disabledReasonForAction(action.command, this.readiness());
+    if (disabledReason) {
+      void vscode.window.showWarningMessage(disabledReason);
       return;
     }
 

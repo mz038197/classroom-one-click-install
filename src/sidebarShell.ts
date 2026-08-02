@@ -23,12 +23,12 @@ export function buildSidebarShell(workspaceName: string): SidebarShell {
       {
         id: "environment",
         title: "環境工具",
-        placeholder: "（占位）稍後提供 uv／git／Node.js 檢查與安裝",
+        placeholder: "uv／git／Node.js 偵測與重新檢查",
       },
       {
         id: "course",
         title: "本課安裝",
-        placeholder: "來自 classroom-installs.yaml（占位：稍後列出本課動作）",
+        placeholder: "來自 classroom-installs.yaml",
       },
     ],
     hasCustomCommandInput: false,
