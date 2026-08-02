@@ -54,12 +54,30 @@ export async function runInIntegratedTerminal(
 
   const execution = integration.executeCommand(command);
   return new Promise((resolve) => {
-    const sub = vscode.window.onDidEndTerminalShellExecution((event) => {
+    let settled = false;
+    const finish = (exitCode: number | undefined): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      endSub.dispose();
+      closeSub.dispose();
+      resolve(exitCode);
+    };
+
+    const endSub = vscode.window.onDidEndTerminalShellExecution((event) => {
       if (event.execution !== execution) {
         return;
       }
-      sub.dispose();
-      resolve(event.exitCode);
+      finish(event.exitCode);
+    });
+
+    // `exit 1` 等會直接結束 shell process；此時未必收到 execution end，需靠關閉事件解卡住。
+    const closeSub = vscode.window.onDidCloseTerminal((closed) => {
+      if (closed !== terminal) {
+        return;
+      }
+      finish(closed.exitStatus?.code ?? 1);
     });
   });
 }
