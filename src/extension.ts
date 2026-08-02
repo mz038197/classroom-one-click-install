@@ -12,8 +12,8 @@ import {
   INSTALL_ENVIRONMENT_TOOL_COMMAND,
   RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
-  SidebarTreeProvider,
-} from "./sidebarTreeProvider";
+} from "./sidebarCommands";
+import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
 
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
@@ -22,8 +22,20 @@ export function activate(context: vscode.ExtensionContext): void {
     execute: executeEnvironmentInstallPlan,
   });
   const courseLane = new CourseLaneService(() => environmentLane.getReadiness());
-  const provider = new SidebarTreeProvider(courseLane, environmentLane);
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
+
+  const provider = new SidebarWebviewProvider(
+    context.extensionUri,
+    courseLane,
+    environmentLane,
+    {
+      recheck: () => recheckEnvironment(),
+      installEnv: (toolId) => installEnvironmentTool(toolId),
+      runAction: async (actionId) => {
+        await courseLane.runAction(actionId);
+      },
+    },
+  );
 
   const refreshUi = (): void => {
     provider.refresh();
@@ -75,7 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
         catalogWatcher?.dispose();
       },
     },
-    vscode.window.registerTreeDataProvider("vansClassroomInstall.sidebar", provider),
+    vscode.window.registerWebviewViewProvider(SidebarWebviewProvider.viewType, provider),
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {
       void courseLane.runAction(actionId);
     }),

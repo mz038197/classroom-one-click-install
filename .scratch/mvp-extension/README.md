@@ -11,3 +11,4 @@ Tickets live in [`issues/`](./issues/). Work the frontier (unblocked `ready-for-
 | 03 | Environment Lane：偵測、重新檢查、依依賴禁用 | 02 |
 | 04 | Environment Lane：安裝／修復與請重開終端 | 03 |
 | 05 | 課堂 VSIX 與教材樣本 | 02, 03, 04 |
+| 06 | Webview 側邊欄 UI | 05 |

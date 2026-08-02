@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ActionRunStateStore, type ActionRunSnapshot } from "./actionRunState";
+import { ActionRunStateStore } from "./actionRunState";
 import {
   disabledReasonForAction,
   type ToolReadiness,
@@ -9,24 +9,17 @@ import {
   parseCourseCatalog,
   type InstallAction,
 } from "./courseCatalog";
+import {
+  CATALOG_FILENAME,
+  type CourseLaneView,
+} from "./courseLaneTypes";
 import { runInIntegratedTerminal } from "./terminalRunner";
 
-export const CATALOG_FILENAME = "classroom-installs.yaml";
-
-export type CourseLaneActionView = InstallAction & {
-  run: ActionRunSnapshot;
-  disabledReason?: string;
-};
-
-export type CourseLaneView =
-  | { kind: "no-workspace" }
-  | { kind: "missing"; message: string }
-  | { kind: "invalid"; message: string }
-  | {
-      kind: "ready";
-      workspaceRoot: string;
-      actions: CourseLaneActionView[];
-    };
+export {
+  CATALOG_FILENAME,
+  type CourseLaneActionView,
+  type CourseLaneView,
+} from "./courseLaneTypes";
 
 export type ReadinessProvider = () => ToolReadiness;
 

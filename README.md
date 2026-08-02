@@ -49,6 +49,6 @@ npm run compile
 npm test
 ```
 
-在 VS Code／Cursor 按 F5（`Run Extension`）開 Extension Development Host；活動列應出現「凡思課堂安裝」側邊欄（Environment Lane 在上、Course Lane 在下）。
+在 VS Code／Cursor 按 F5（`Run Extension`）開 Extension Development Host；活動列應出現「凡思課堂安裝」側邊欄（Webview：Environment Lane 在上、Course Lane 在下）。
 
 工作區根目錄放置 `classroom-installs.yaml` 後，Course Lane 會列出本課 Install Action；點選會先確認完整 command，再於整合終端機執行。

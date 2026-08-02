@@ -42,6 +42,7 @@
     "views": {
       "vansClassroomInstall": [
         {
+          "type": "webview",
           "id": "vansClassroomInstall.sidebar",
           "name": "凡思課堂安裝"
         }
