@@ -1,0 +1,68 @@
+import { parse as parseYaml } from "yaml";
+
+export type InstallAction = {
+  id: string;
+  title: string;
+  command: string;
+  description?: string;
+};
+
+export type ParseCourseCatalogResult =
+  | { ok: true; actions: InstallAction[] }
+  | { ok: false; error: string };
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/** 解析工作區根目錄 `classroom-installs.yaml` 內容。失敗時不回半套清單。 */
+export function parseCourseCatalog(source: string): ParseCourseCatalogResult {
+  let doc: unknown;
+  try {
+    doc = parseYaml(source);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: `YAML 無法解析：${message}` };
+  }
+
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
+    return { ok: false, error: "根層必須是物件，且含 actions 陣列" };
+  }
+
+  const actionsRaw = (doc as { actions?: unknown }).actions;
+  if (!Array.isArray(actionsRaw)) {
+    return { ok: false, error: "缺少頂層鍵 actions（陣列）" };
+  }
+
+  const actions: InstallAction[] = [];
+  for (let i = 0; i < actionsRaw.length; i++) {
+    const row = actionsRaw[i];
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return { ok: false, error: `actions[${i}] 必須是物件` };
+    }
+    const { id, title, command, description } = row as Record<string, unknown>;
+    if (!isNonEmptyString(id) || !isNonEmptyString(title) || !isNonEmptyString(command)) {
+      return {
+        ok: false,
+        error: `actions[${i}] 缺少必填欄位 id／title／command`,
+      };
+    }
+    const action: InstallAction = {
+      id: id.trim(),
+      title: title.trim(),
+      command: command.trim(),
+    };
+    if (description !== undefined) {
+      if (!isNonEmptyString(description)) {
+        return {
+          ok: false,
+          error: `actions[${i}].description 若提供須為非空字串`,
+        };
+      }
+      action.description = description.trim();
+    }
+    actions.push(action);
+  }
+
+  return { ok: true, actions };
+}

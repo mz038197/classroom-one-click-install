@@ -15,6 +15,12 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "classroomOneClickInstall.runInstallAction",
+        "title": "執行本課安裝動作"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -41,8 +47,11 @@
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
+    "@types/node": "^22.20.1",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
   }
 }
