@@ -215,11 +215,6 @@ export function getSidebarWebviewHtml(
     button.secondary:hover:not(:disabled) {
       background: var(--vscode-toolbar-hoverBackground, rgba(127,127,127,.12));
     }
-    .source {
-      margin: 0 0 8px;
-      font-size: 11px;
-      opacity: 0.75;
-    }
   </style>
 </head>
 <body>

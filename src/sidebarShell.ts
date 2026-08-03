@@ -28,7 +28,7 @@ export function buildSidebarShell(workspaceName: string): SidebarShell {
       {
         id: "course",
         title: "本課安裝",
-        placeholder: "來自 classroom-installs.yaml",
+        placeholder: "本課 Install Action 清單",
       },
     ],
     hasCustomCommandInput: false,

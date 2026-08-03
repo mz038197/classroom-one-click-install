@@ -101,6 +101,63 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.course.actions.length, 0);
   });
 
+  it("shows student-facing toolchain badge copy without listing tools", () => {
+    const ready = buildSidebarViewModel({
+      workspaceName: "demo",
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(ready.environment.badge, "環境工具皆就緒");
+
+    const notReady: EnvironmentLaneView = {
+      ...envReady,
+      toolchainReady: false,
+      tools: envReady.tools.map((t, i) =>
+        i === 0 ? { ...t, status: "missing", detail: "未安裝", actionLabel: "安裝" } : t,
+      ),
+    };
+    const incomplete = buildSidebarViewModel({
+      workspaceName: "demo",
+      environment: notReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(incomplete.environment.badge, "環境工具未齊");
+  });
+
+  it("does not expose Course Catalog filename as a source label", () => {
+    const withActions = buildSidebarViewModel({
+      workspaceName: "demo",
+      environment: envReady,
+      course: {
+        kind: "ready",
+        workspaceRoot: "/tmp/demo",
+        actions: [
+          {
+            id: "a1",
+            title: "安裝 tools",
+            kind: "package",
+            command: "uv add x",
+            run: { status: "idle" },
+          },
+        ],
+      },
+    });
+    const emptyCatalog = buildSidebarViewModel({
+      workspaceName: "demo",
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    const missing = buildSidebarViewModel({
+      workspaceName: "demo",
+      environment: envReady,
+      course: { kind: "missing", message: "找不到 classroom-installs.yaml" },
+    });
+    assert.equal("sourceLabel" in withActions.course, false);
+    assert.equal("sourceLabel" in emptyCatalog.course, false);
+    assert.equal("sourceLabel" in missing.course, false);
+    assert.match(missing.course.emptyMessage ?? "", /classroom-installs\.yaml/);
+  });
+
   it("marks installing env tools and running actions as busy", () => {
     const env: EnvironmentLaneView = {
       toolchainReady: false,

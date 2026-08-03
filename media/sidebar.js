@@ -203,9 +203,6 @@
 
     const courseHead = laneHeader("course", "本課安裝", null);
     const courseBody = el("div", { className: "lane-body" });
-    courseBody.appendChild(
-      el("p", { className: "source", text: vm.course.sourceLabel }),
-    );
     if (vm.course.emptyMessage) {
       courseBody.appendChild(
         el("p", { className: "empty", text: vm.course.emptyMessage }),

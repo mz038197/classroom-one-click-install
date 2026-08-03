@@ -1,6 +1,6 @@
 import type { ActionRunSnapshot, ActionRunStatus } from "./actionRunState";
 import { actionKindLabel, type ActionKind } from "./courseCatalog";
-import { CATALOG_FILENAME, type CourseLaneView } from "./courseLaneTypes";
+import type { CourseLaneView } from "./courseLaneTypes";
 import type {
   EnvironmentLaneView,
   EnvironmentToolUiStatus,
@@ -44,7 +44,6 @@ export type SidebarViewModel = {
     tools: SidebarEnvToolVm[];
   };
   course: {
-    sourceLabel: string;
     emptyMessage?: string;
     actions: SidebarCourseActionVm[];
   };
@@ -62,9 +61,7 @@ export function buildSidebarViewModel(
 ): SidebarViewModel {
   const shell = buildSidebarShell(input.workspaceName);
   const env = input.environment;
-  const badge = env.toolchainReady
-    ? "Toolchain Ready：uv · git · Node 皆就緒"
-    : `Toolchain Ready：未齊（uv ${readyMark(env, "uv")} · git ${readyMark(env, "git")} · Node ${readyMark(env, "node")}）`;
+  const badge = env.toolchainReady ? "環境工具皆就緒" : "環境工具未齊";
 
   return {
     title: shell.title,
@@ -92,30 +89,25 @@ export function buildSidebarViewModel(
 }
 
 function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] {
-  const sourceLabel = `來自 ${CATALOG_FILENAME}`;
   if (course.kind === "no-workspace") {
     return {
-      sourceLabel,
       emptyMessage: "請先開啟工作區資料夾",
       actions: [],
     };
   }
   if (course.kind === "missing" || course.kind === "invalid") {
     return {
-      sourceLabel,
       emptyMessage: course.message,
       actions: [],
     };
   }
   if (course.actions.length === 0) {
     return {
-      sourceLabel: `${sourceLabel}（actions 為空）`,
       emptyMessage: "Catalog 目前沒有可執行的本課動作",
       actions: [],
     };
   }
   return {
-    sourceLabel,
     actions: course.actions.map((action) => {
       const busy = action.run.status === "running";
       const disabled = Boolean(action.disabledReason);
@@ -137,10 +129,6 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
       };
     }),
   };
-}
-
-function readyMark(view: EnvironmentLaneView, id: EnvironmentToolId): string {
-  return view.tools.find((t) => t.id === id)?.status === "ready" ? "✓" : "✗";
 }
 
 function statusLabel(run: ActionRunSnapshot): string {
