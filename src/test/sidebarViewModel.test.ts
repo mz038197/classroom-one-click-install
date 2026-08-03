@@ -40,6 +40,7 @@ describe("buildSidebarViewModel", () => {
         {
           id: "a1",
           title: "安裝 tools",
+          kind: "package",
           description: "從 GitHub",
           command: "uv add x",
           run: { status: "idle" },
@@ -57,6 +58,8 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.workspaceLabel, "工作區：demo");
     assert.equal(vm.environment.tools.length, 3);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");
+    assert.equal(vm.course.actions[0]?.kind, "package");
+    assert.equal(vm.course.actions[0]?.kindLabel, "套件");
     assert.equal(vm.course.actions[0]?.actionLabel, "安裝");
     assert.equal(vm.hasCustomCommandInput, false);
   });
@@ -69,6 +72,7 @@ describe("buildSidebarViewModel", () => {
         {
           id: "needs-git",
           title: "安裝 runtime",
+          kind: "package",
           command: "uv add git+https://example.com/x.git",
           run: { status: "idle" },
           disabledReason: "需要 git",
@@ -132,6 +136,7 @@ describe("buildSidebarViewModel", () => {
         {
           id: "a1",
           title: "安裝 tools",
+          kind: "skill",
           command: "uv add x",
           run: { status: "running" },
         },

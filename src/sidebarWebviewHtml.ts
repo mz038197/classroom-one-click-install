@@ -74,6 +74,28 @@ export function getSidebarWebviewHtml(
       background: var(--vscode-sideBarSectionHeader-background, transparent);
       border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border, transparent);
     }
+    .lane-head-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      flex: 1;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    .lane-head-main:hover { opacity: 0.9; }
+    .lane-chevron {
+      flex-shrink: 0;
+      font-size: 10px;
+      opacity: 0.8;
+      width: 1em;
+    }
     .lane-head h2 {
       margin: 0;
       font-size: 12px;
@@ -81,6 +103,8 @@ export function getSidebarWebviewHtml(
       text-transform: none;
     }
     .lane-body { padding: 10px var(--pad) 12px; }
+    .lane.collapsed .lane-body { display: none; }
+    .lane.collapsed .lane-head { border-bottom: none; }
     .badge {
       display: inline-block;
       margin-bottom: 10px;
@@ -117,10 +141,27 @@ export function getSidebarWebviewHtml(
       justify-content: space-between;
       gap: 8px;
     }
+    .card-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
     .card-title {
       margin: 0;
       font-size: 12.5px;
       font-weight: 600;
+    }
+    .kind-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      border: 1px solid color-mix(in srgb, var(--vans-accent) 40%, transparent);
+      background: var(--vans-accent-muted);
+      white-space: nowrap;
     }
     .card-desc, .card-detail {
       margin: 4px 0 0;

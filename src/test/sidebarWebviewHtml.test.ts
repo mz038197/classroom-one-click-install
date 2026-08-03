@@ -12,5 +12,7 @@ describe("getSidebarWebviewHtml", () => {
     assert.match(html, /src="https:\/\/file\+\.vscode-resource\.vscode-cdn\.net\/media\/sidebar\.js"/);
     assert.doesNotMatch(html, /<script nonce=/);
     assert.match(html, /載入中/);
+    assert.match(html, /\.lane\.collapsed/);
+    assert.match(html, /\.kind-tag/);
   });
 });

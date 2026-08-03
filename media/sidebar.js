@@ -6,6 +6,12 @@
     return;
   }
 
+  /** Session 內記住收合；webview 腳本重載後回到展開。 */
+  const laneCollapsed = {
+    environment: false,
+    course: false,
+  };
+
   window.addEventListener("message", (event) => {
     const msg = event.data;
     if (!msg || msg.type !== "state") {
@@ -69,6 +75,55 @@
     }
   }
 
+  /**
+   * @param {"environment" | "course"} laneId
+   * @param {string} title
+   * @param {HTMLElement | null} trailing
+   */
+  function laneHeader(laneId, title, trailing) {
+    const collapsed = laneCollapsed[laneId];
+    const toggle = el(
+      "button",
+      {
+        className: "lane-head-main",
+        type: "button",
+        "aria-expanded": collapsed ? "false" : "true",
+        onclick: () => {
+          laneCollapsed[laneId] = !laneCollapsed[laneId];
+          const section = app.querySelector(
+            'section.lane[data-lane="' + laneId + '"]',
+          );
+          if (!(section instanceof HTMLElement)) {
+            return;
+          }
+          section.classList.toggle("collapsed", laneCollapsed[laneId]);
+          const chevron = section.querySelector(".lane-chevron");
+          if (chevron) {
+            chevron.textContent = laneCollapsed[laneId] ? "▶" : "▼";
+          }
+          const btn = section.querySelector(".lane-head-main");
+          if (btn instanceof HTMLElement) {
+            btn.setAttribute(
+              "aria-expanded",
+              laneCollapsed[laneId] ? "false" : "true",
+            );
+          }
+        },
+      },
+      el("span", {
+        className: "lane-chevron",
+        text: collapsed ? "▶" : "▼",
+        "aria-hidden": "true",
+      }),
+      el("h2", { text: title }),
+    );
+    const head = el("div", { className: "lane-head" }, toggle);
+    if (trailing) {
+      head.appendChild(trailing);
+    }
+    return head;
+  }
+
   function render(vm) {
     clear(app);
 
@@ -90,17 +145,13 @@
     );
     app.appendChild(hero);
 
-    const envHead = el(
-      "div",
-      { className: "lane-head" },
-      el("h2", { text: "環境工具" }),
-      el("button", {
-        className: "secondary",
-        type: "button",
-        text: "重新檢查",
-        onclick: () => vscode.postMessage({ type: "recheck" }),
-      }),
-    );
+    const recheck = el("button", {
+      className: "secondary",
+      type: "button",
+      text: "重新檢查",
+      onclick: () => vscode.postMessage({ type: "recheck" }),
+    });
+    const envHead = laneHeader("environment", "環境工具", recheck);
     const envBody = el("div", { className: "lane-body" });
     envBody.appendChild(
       el("div", {
@@ -138,13 +189,19 @@
       card.appendChild(actions);
       envBody.appendChild(card);
     }
-    app.appendChild(el("section", { className: "lane" }, envHead, envBody));
-
-    const courseHead = el(
-      "div",
-      { className: "lane-head" },
-      el("h2", { text: "本課安裝" }),
+    app.appendChild(
+      el(
+        "section",
+        {
+          className: "lane" + (laneCollapsed.environment ? " collapsed" : ""),
+          "data-lane": "environment",
+        },
+        envHead,
+        envBody,
+      ),
     );
+
+    const courseHead = laneHeader("course", "本課安裝", null);
     const courseBody = el("div", { className: "lane-body" });
     courseBody.appendChild(
       el("p", { className: "source", text: vm.course.sourceLabel }),
@@ -163,7 +220,15 @@
         el(
           "div",
           { className: "card-top" },
-          el("p", { className: "card-title", text: action.title }),
+          el(
+            "div",
+            { className: "card-title-row" },
+            el("span", {
+              className: "kind-tag",
+              text: action.kindLabel,
+            }),
+            el("p", { className: "card-title", text: action.title }),
+          ),
           el("span", {
             className: statusClass(
               action.disabledReason ? "warn" : action.status,
@@ -200,7 +265,15 @@
       courseBody.appendChild(card);
     }
     app.appendChild(
-      el("section", { className: "lane" }, courseHead, courseBody),
+      el(
+        "section",
+        {
+          className: "lane" + (laneCollapsed.course ? " collapsed" : ""),
+          "data-lane": "course",
+        },
+        courseHead,
+        courseBody,
+      ),
     );
   }
 

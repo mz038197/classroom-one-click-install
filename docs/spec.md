@@ -57,10 +57,11 @@
 
 | 用語 | 意義 |
 |---|---|
-| Install Action | 老師策展、學生可點的一筆安裝動作（顯示名＋命令） |
+| Install Action | 老師策展、學生可點的一筆安裝動作（顯示名＋kind＋命令） |
+| Action Kind | `skill`／`package`／`mcp`（純顯示 tag） |
 | Environment Tool | uv／git／Node.js |
 | Course Catalog | `classroom-installs.yaml` |
-| Environment Lane／Course Lane | 側邊欄兩區 |
+| Environment Lane／Course Lane | 側邊欄兩大區（可各自收合） |
 | Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；不是 Course Lane 總開關 |
 
 ---
@@ -81,11 +82,13 @@
 |---|---|---|
 | `id` | 是 | 穩定識別（狀態記憶用） |
 | `title` | 是 | 側邊欄顯示名稱 |
+| `kind` | 是 | Action Kind：僅允許 `skill`／`package`／`mcp`（學生分別看到「Skill」「套件」「MCP」） |
 | `command` | 是 | 整段要執行的 shell 命令 |
 | `description` | 否 | 一行說明 |
 
 - 執行目錄：一律工作區根目錄  
 - 表達方式：以整段 `command` 為準（非結構化拆欄位組命令）  
+- `kind` **純顯示**：不分區、不收合、不改變啟用／執行／依賴行為；缺漏或非法值 → 整份 catalog 載入失敗  
 
 ### 範例
 
@@ -93,20 +96,30 @@
 actions:
   - id: peas-agent-tools
     title: 安裝 peas-agent-tools
+    kind: package
     description: 從 GitHub 加入專案依賴（可升級）
     command: >-
       uv add --upgrade "peas-agent-tools @ git+https://github.com/mz038197/peas-agent-tools.git"
 
   - id: peas-agent-runtime
     title: 安裝 peas-agent-runtime
+    kind: package
     command: >-
       uv add git+https://github.com/mz038197/peas-agent-runtime.git
 
   - id: dataset-streamlit-shell
     title: 安裝 dataset-streamlit-shell
+    kind: package
     description: 以 uvx 從 Git 套件執行安裝入口
     command: >-
       uvx --from git+https://github.com/mz038197/dataset-streamlit-shell-installer.git add-dataset-streamlit-shell --update
+
+  - id: mattpocock-skills
+    title: 安裝 Matt Pocock skills
+    kind: skill
+    description: 以 npx 加入 mattpocock/skills
+    command: >-
+      npx skills@latest add mattpocock/skills
 ```
 
 決策票：[03](../.scratch/classroom-one-click-install/issues/03-grilling-catalog-schema.md)
@@ -159,7 +172,7 @@ actions:
 
 ### 行為
 
-- 列出 catalog 的 `title`／`description`  
+- 列出 catalog 的 `title`／`description`，並顯示 `kind` 對應的 tag（Skill／套件／MCP）  
 - 點擊 → **每次**確認框顯示完整 `command` → 確認後在工作區根目錄送進整合終端機  
 - 狀態：未執行／進行中／成功／失敗／因缺工具禁用  
 - 成功後可「再執行」；失敗可「重試」  
@@ -197,7 +210,14 @@ actions:
 必須涵蓋狀態：
 
 - 環境：版本／未安裝／請重開終端／重新檢查／重新安裝  
-- 本課：成功、進行中、失敗短提示、缺工具禁用、確認框  
+- 本課：Action Kind tag、成功、進行中、失敗短提示、缺工具禁用、確認框  
+
+### 兩大區收合
+
+- **環境工具**與**本課安裝**兩區各自可收合／展開  
+- 預設：兩區都展開  
+- 收合狀態只記在本次 webview session；腳本／webview 完整重載後回到兩區展開  
+- 不做依 Action Kind 的子區收合（Course Lane 維持扁平清單）  
 
 草圖：[prototypes/07-sidebar-ia.md](../.scratch/classroom-one-click-install/prototypes/07-sidebar-ia.md)  
 決策票：[07](../.scratch/classroom-one-click-install/issues/07-prototype-sidebar-ia.md)
@@ -222,14 +242,14 @@ actions:
 
 實作完成 MVP 時，下列皆應可手動或自動化驗證：
 
-1. **Catalog 載入**：工作區根目錄放置合法 `classroom-installs.yaml` 後，側邊欄 Course Lane 顯示對應 `title`（與選填 `description`）。  
+1. **Catalog 載入**：工作區根目錄放置合法 `classroom-installs.yaml`（每筆含合法 `kind`）後，側邊欄 Course Lane 顯示對應 `title`、kind tag（與選填 `description`）。  
 2. **確認後執行**：點一本課動作會先顯示完整 `command`；取消不執行；確認後在工作區根目錄於整合終端機執行該命令。  
 3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。  
 4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。  
 5. **依依賴禁用**：僅移除／隱藏 `git`（uv 仍在）時，含 `git+` 的本課動作禁用；不要求 Node 就緒也能點純 `uv`／`uvx` 且不含 `git+` 的動作（若清單中有此類）。  
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
 7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node。  
-8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口。  
+8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口；兩大區可各自收合，預設展開。  
 
 ---
 

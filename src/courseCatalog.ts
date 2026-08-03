@@ -1,8 +1,19 @@
 import { parse as parseYaml } from "yaml";
 
+export const ACTION_KINDS = ["skill", "package", "mcp"] as const;
+
+export type ActionKind = (typeof ACTION_KINDS)[number];
+
+export const ACTION_KIND_LABELS: Record<ActionKind, string> = {
+  skill: "Skill",
+  package: "套件",
+  mcp: "MCP",
+};
+
 export type InstallAction = {
   id: string;
   title: string;
+  kind: ActionKind;
   command: string;
   description?: string;
 };
@@ -13,6 +24,15 @@ export type ParseCourseCatalogResult =
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isActionKind(value: unknown): value is ActionKind {
+  return typeof value === "string" && (ACTION_KINDS as readonly string[]).includes(value);
+}
+
+/** 學生可見的 Action Kind 標籤。 */
+export function actionKindLabel(kind: ActionKind): string {
+  return ACTION_KIND_LABELS[kind];
 }
 
 /** 解析工作區根目錄 `classroom-installs.yaml` 內容。失敗時不回半套清單。 */
@@ -40,16 +60,24 @@ export function parseCourseCatalog(source: string): ParseCourseCatalogResult {
     if (!row || typeof row !== "object" || Array.isArray(row)) {
       return { ok: false, error: `actions[${i}] 必須是物件` };
     }
-    const { id, title, command, description } = row as Record<string, unknown>;
+    const { id, title, command, description, kind } = row as Record<string, unknown>;
     if (!isNonEmptyString(id) || !isNonEmptyString(title) || !isNonEmptyString(command)) {
       return {
         ok: false,
         error: `actions[${i}] 缺少必填欄位 id／title／command`,
       };
     }
+    const kindValue = isNonEmptyString(kind) ? kind.trim() : kind;
+    if (!isActionKind(kindValue)) {
+      return {
+        ok: false,
+        error: `actions[${i}].kind 必須是 skill／package／mcp`,
+      };
+    }
     const action: InstallAction = {
       id: id.trim(),
       title: title.trim(),
+      kind: kindValue,
       command: command.trim(),
     };
     if (description !== undefined) {

@@ -1,4 +1,5 @@
 import type { ActionRunSnapshot, ActionRunStatus } from "./actionRunState";
+import { actionKindLabel, type ActionKind } from "./courseCatalog";
 import { CATALOG_FILENAME, type CourseLaneView } from "./courseLaneTypes";
 import type {
   EnvironmentLaneView,
@@ -20,6 +21,8 @@ export type SidebarEnvToolVm = {
 export type SidebarCourseActionVm = {
   id: string;
   title: string;
+  kind: ActionKind;
+  kindLabel: string;
   description?: string;
   status: ActionRunStatus;
   statusLabel: string;
@@ -119,6 +122,8 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
       return {
         id: action.id,
         title: action.title,
+        kind: action.kind,
+        kindLabel: actionKindLabel(action.kind),
         ...(action.description ? { description: action.description } : {}),
         status: action.run.status,
         statusLabel: statusLabel(action.run),

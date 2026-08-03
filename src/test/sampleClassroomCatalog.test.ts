@@ -13,7 +13,7 @@ const samplePath = path.join(
 );
 
 describe("samples/classroom-installs.yaml", () => {
-  it("parses as a valid Course Catalog with the three spec example actions", () => {
+  it("parses as a valid Course Catalog with required kinds", () => {
     const source = readFileSync(samplePath, "utf8");
     const result = parseCourseCatalog(source);
     assert.equal(result.ok, true);
@@ -21,9 +21,13 @@ describe("samples/classroom-installs.yaml", () => {
       return;
     }
     assert.deepEqual(
-      result.actions.map((a) => a.id),
-      ["peas-agent-tools", "peas-agent-runtime", "dataset-streamlit-shell"],
+      result.actions.map((a) => ({ id: a.id, kind: a.kind })),
+      [
+        { id: "peas-agent-tools", kind: "package" },
+        { id: "peas-agent-runtime", kind: "package" },
+        { id: "dataset-streamlit-shell", kind: "package" },
+        { id: "mattpocock-skills", kind: "skill" },
+      ],
     );
-    assert.ok(result.actions.every((a) => a.command.includes("uv")));
   });
 });
