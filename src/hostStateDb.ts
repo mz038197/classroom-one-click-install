@@ -127,16 +127,37 @@ export async function promoteExtensionSecretToHost(options: {
   return { hostStorageKey: toKey };
 }
 
+/** Encrypt via the Host Electron process (same cipher as Copilot SecretStorage). */
+export function encryptWithElectronSafeStorage(plaintext: string): Uint8Array {
+  // Extension host shares Electron; require keeps this off the VS Code public API surface.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const electron = require("electron") as {
+    safeStorage?: {
+      isEncryptionAvailable?: () => boolean;
+      encryptString?: (value: string) => Buffer;
+    };
+  };
+  const safeStorage = electron.safeStorage;
+  if (
+    !safeStorage?.isEncryptionAvailable?.() ||
+    typeof safeStorage.encryptString !== "function"
+  ) {
+    throw new Error("Host safeStorage 不可用，無法寫入 Classroom API Key");
+  }
+  return safeStorage.encryptString(plaintext);
+}
+
 /** Encrypt plaintext with Electron safeStorage and write Host chat.lm.secret.* row. */
 export async function writeHostChatLmSecret(options: {
   stateDbPath: string;
   plaintext: string;
   secretKey?: string;
-  encryptString: (value: string) => Uint8Array;
+  encryptString?: (value: string) => Uint8Array;
 }): Promise<{ hostStorageKey: string }> {
   const secretKey = options.secretKey ?? CLASSROOM_CHAT_LM_SECRET_KEY;
   const hostStorageKey = hostChatLmSecretStorageKey(secretKey);
-  const encrypted = options.encryptString(options.plaintext);
+  const encrypt = options.encryptString ?? encryptWithElectronSafeStorage;
+  const encrypted = encrypt(options.plaintext);
   const value = serializeSafeStorageBuffer(encrypted);
   await upsertItemTableValue(options.stateDbPath, hostStorageKey, value);
   return { hostStorageKey };

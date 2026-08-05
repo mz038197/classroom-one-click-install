@@ -32,9 +32,9 @@ function baseOptions(overrides: Record<string, unknown> = {}) {
 }
 
 describe("RouterLaneService", () => {
-  it("redeems with Host secret ref, promotes, and asks for reload", async () => {
+  it("redeems with Host secret ref, writes Host secret, and asks for reload", async () => {
     let wroteKey = "";
-    let promoted = false;
+    let hostPlaintext = "";
     const client: RouterPortalClient = {
       fetchChatLanguageModelsTemplate: async () => [
         { name: "VCRouter", vendor: "customendpoint", apiKey: "", models: [] },
@@ -59,8 +59,8 @@ describe("RouterLaneService", () => {
         wroteKey = apiKey;
         return "/tmp/Code/User/chatLanguageModels.json";
       },
-      promoteToHost: async () => {
-        promoted = true;
+      writeHostSecret: async ({ plaintext }: { plaintext: string }) => {
+        hostPlaintext = plaintext;
         return { hostStorageKey: "secret://chat.lm.secret.-7a55c1a5" };
       },
     });
@@ -73,7 +73,7 @@ describe("RouterLaneService", () => {
     assert.equal(wroteKey, `\${input:${CLASSROOM_CHAT_LM_SECRET_KEY}}`);
     assert.equal(secrets.get("classroomApiKey"), "vcr_sk_testkey");
     assert.equal(secrets.get(CLASSROOM_CHAT_LM_SECRET_KEY), "vcr_sk_testkey");
-    assert.equal(promoted, true);
+    assert.equal(hostPlaintext, "vcr_sk_testkey");
     assert.equal(result.needsReload, true);
     assert.equal(lane.getView().canClear, true);
     assert.match(lane.getView().detail, /BYOK/);
