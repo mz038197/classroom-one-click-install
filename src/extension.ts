@@ -7,6 +7,11 @@ import {
 } from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
 import { resolveEditorUserDir } from "./editorUserPath";
+import {
+  PENDING_HOST_BYOK_STATE_KEY,
+  finalizePendingHostByok,
+  type PendingHostByok,
+} from "./pendingHostByok";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
 import {
@@ -26,6 +31,11 @@ import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
 
 const API_KEY_SECRET = "classroomApiKey";
 
+const BYOK_RESTART_MESSAGE =
+  "BYOK 已寫入。請完全結束 VS Code（關掉所有視窗，勿只按重載），再重新開啟後選 VCRouter 模型。";
+const CLEAR_RESTART_MESSAGE =
+  "已清除課堂連線。請完全結束 VS Code 後再開啟，變更才會穩定生效。";
+
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
     platform: detectInstallPlatform(),
@@ -37,14 +47,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const baseUrl = defaultRouterBaseUrl((key) =>
     vscode.workspace.getConfiguration().get(key),
   );
+
+  const resolveUserDir = (): string =>
+    resolveEditorUserDir({
+      platform: process.platform,
+      uriScheme: vscode.env.uriScheme,
+    });
+
   const routerLane = new RouterLaneService(createRouterPortalClient(baseUrl), {
     baseUrl,
     openExternal: (url) => vscode.env.openExternal(vscode.Uri.parse(url)),
-    resolveUserDir: () =>
-      resolveEditorUserDir({
-        platform: process.platform,
-        uriScheme: vscode.env.uriScheme,
-      }),
+    resolveUserDir,
     uriScheme: vscode.env.uriScheme,
     extensionId: context.extension.id,
     secretStore: {
@@ -57,23 +70,29 @@ export function activate(context: vscode.ExtensionContext): void {
 
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
 
-  const offerReload = async (message: string): Promise<void> => {
-    const choice = await vscode.window.showInformationMessage(
-      message,
-      "重載視窗",
-    );
-    if (choice === "重載視窗") {
-      await vscode.commands.executeCommand("workbench.action.reloadWindow");
-    }
+  const markPendingHostByok = async (): Promise<void> => {
+    const pending: PendingHostByok = {
+      extensionId: context.extension.id,
+      userDir: resolveUserDir(),
+    };
+    await context.globalState.update(PENDING_HOST_BYOK_STATE_KEY, pending);
+  };
+
+  const offerFullRestart = async (message: string): Promise<void> => {
+    await vscode.window.showInformationMessage(message, "知道了");
   };
 
   const afterRouterAction = async (
     result: RouterLaneActionResult,
-    reloadMessage: string,
+    restartMessage: string,
+    markPending: boolean,
   ): Promise<void> => {
     refreshUi();
     if (result.needsReload) {
-      await offerReload(reloadMessage);
+      if (markPending) {
+        await markPendingHostByok();
+      }
+      await offerFullRestart(restartMessage);
     }
   };
 
@@ -94,10 +113,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       routerRedeem: async () => {
         const result = await routerLane.redeemAndSetup();
-        await afterRouterAction(
-          result,
-          "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
-        );
+        await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
       },
       routerClear: async () => {
         const confirm = await vscode.window.showWarningMessage(
@@ -108,18 +124,13 @@ export function activate(context: vscode.ExtensionContext): void {
         if (confirm !== "清除") {
           return;
         }
+        await context.globalState.update(PENDING_HOST_BYOK_STATE_KEY, undefined);
         const result = await routerLane.clearClassroomConnection();
-        await afterRouterAction(
-          result,
-          "已清除課堂連線。請重載視窗使變更生效。",
-        );
+        await afterRouterAction(result, CLEAR_RESTART_MESSAGE, false);
       },
       routerHandoffPaste: async (raw) => {
         const result = await routerLane.acceptHandoffInput(raw);
-        await afterRouterAction(
-          result,
-          "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
-        );
+        await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
       },
     },
   );
@@ -182,10 +193,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerUriHandler({
       handleUri(uri: vscode.Uri): void {
         void routerLane.acceptHandoffInput(uri.toString(true)).then((result) => {
-          void afterRouterAction(
-            result,
-            "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
-          );
+          void afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
           void vscode.commands.executeCommand(
             "workbench.view.extension.vansClassroomInstall",
           );
@@ -217,6 +225,25 @@ export function activate(context: vscode.ExtensionContext): void {
   reloadCatalog();
   void recheckEnvironment();
   void routerLane.restoreFromSecrets().then(refreshUi);
+
+  void (async () => {
+    const pending = context.globalState.get<PendingHostByok>(
+      PENDING_HOST_BYOK_STATE_KEY,
+    );
+    const finalized = await finalizePendingHostByok({
+      pending,
+      getApiKey: () => Promise.resolve(context.secrets.get(API_KEY_SECRET)),
+      clearPending: () =>
+        Promise.resolve(
+          context.globalState.update(PENDING_HOST_BYOK_STATE_KEY, undefined),
+        ),
+    });
+    if (finalized === "wrote") {
+      void vscode.window.showInformationMessage(
+        "已在啟動時寫入 Host Classroom API Key。請選 VCRouter 模型試試。",
+      );
+    }
+  })();
 }
 
 export function deactivate(): void {
