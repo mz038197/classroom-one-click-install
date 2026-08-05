@@ -1,8 +1,8 @@
 {
   "name": "vans-classroom-install",
   "displayName": "凡思課堂安裝",
-  "description": "課堂側邊欄：檢查／安裝環境工具，並一鍵執行本課安裝動作。",
-  "version": "0.1.2",
+  "description": "課堂側邊欄：兌換邀請碼與 BYOK、檢查／安裝環境工具，並一鍵執行本課安裝動作。",
+  "version": "0.1.3",
   "publisher": "vans-coding",
   "license": "MIT",
   "repository": {
