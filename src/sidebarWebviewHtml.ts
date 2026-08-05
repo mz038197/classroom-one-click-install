@@ -15,6 +15,11 @@ export function getSidebarWebviewHtml(
       --vans-accent: #3d9a5f;
       --vans-accent-hover: #2f7d4c;
       --vans-accent-muted: color-mix(in srgb, var(--vans-accent) 18%, transparent);
+      --brand-gradient-a: #007070;
+      --brand-gradient-b: #009999;
+      --brand-gradient-c: #f8c000;
+      --logo-badge-bg: #eef5f5;
+      --logo-badge-shadow: rgba(0, 112, 112, 0.18);
       --ok: var(--vscode-testing-iconPassed, #3d9a5f);
       --err: var(--vscode-testing-iconFailed, #e11d48);
       --warn: var(--vscode-editorWarning-foreground, #d97706);
@@ -38,20 +43,40 @@ export function getSidebarWebviewHtml(
       margin-bottom: 14px;
       padding: 12px;
       border-radius: var(--radius);
-      background: linear-gradient(135deg, var(--vans-accent-muted), transparent 70%);
+      background: linear-gradient(135deg, rgba(0, 112, 112, 0.12), transparent 70%);
       border: 1px solid var(--vscode-sideBarSectionHeader-border, transparent);
     }
-    header.hero img {
+    header.hero .logo-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 40px;
       height: 40px;
-      border-radius: 10px;
+      padding: 3px;
+      border-radius: 8px;
+      background: var(--logo-badge-bg);
+      box-shadow: 0 0 0 1px var(--logo-badge-shadow);
+      overflow: hidden;
       flex-shrink: 0;
+    }
+    header.hero .logo-badge img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
     header.hero h1 {
       margin: 0;
       font-size: 14px;
-      font-weight: 650;
-      letter-spacing: 0.02em;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    header.hero h1.gradient-text {
+      background: linear-gradient(135deg, var(--brand-gradient-a) 0%, var(--brand-gradient-b) 50%, var(--brand-gradient-c) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
     }
     header.hero p {
       margin: 2px 0 0;

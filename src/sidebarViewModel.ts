@@ -94,7 +94,7 @@ export function buildSidebarViewModel(
       canOpenSignIn: router.canOpenSignIn,
       canRedeem: router.canRedeem,
       canClear: router.canClear,
-      signInLabel: "登入 Google",
+      signInLabel: "連線登入",
       redeemLabel: "兌換並設定",
       clearLabel: "清除課堂連線",
     },

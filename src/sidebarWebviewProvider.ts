@@ -134,7 +134,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       name: f.name,
     }));
     const iconUri = this.view.webview
-      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "icon.png"))
+      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "brand-logo.png"))
       .toString();
     const payload = {
       ...buildSidebarViewModel({

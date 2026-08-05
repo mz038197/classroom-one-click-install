@@ -67,6 +67,7 @@ describe("buildSidebarViewModel", () => {
 
     assert.equal(vm.title, "凡思課堂安裝");
     assert.equal(vm.workspaceLabel, "工作區：demo");
+    assert.equal(vm.router.signInLabel, "連線登入");
     assert.equal(vm.router.statusLabel, "尚未設定");
     assert.equal(vm.environment.tools.length, 3);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");

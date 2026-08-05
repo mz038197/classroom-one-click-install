@@ -131,16 +131,20 @@
     const hero = el(
       "header",
       { className: "hero" },
-      el("img", {
-        src: vm.iconUri || "",
-        alt: "",
-        width: "40",
-        height: "40",
-      }),
+      el(
+        "div",
+        { className: "logo-badge" },
+        el("img", {
+          src: vm.iconUri || "",
+          alt: "",
+          width: "40",
+          height: "40",
+        }),
+      ),
       el(
         "div",
         null,
-        el("h1", { text: vm.title }),
+        el("h1", { className: "gradient-text", text: vm.title }),
         el("p", { text: vm.workspaceLabel }),
       ),
     );
@@ -153,7 +157,7 @@
       detail: "",
       canOpenSignIn: true,
       canRedeem: false,
-      signInLabel: "登入 Google",
+      signInLabel: "連線登入",
       redeemLabel: "兌換並設定",
     };
     const routerHead = laneHeader("router", "課堂連線", null);
@@ -203,7 +207,7 @@
     const signInBtn = el("button", {
       className: "primary",
       type: "button",
-      text: router.signInLabel || "登入 Google",
+      text: router.signInLabel || "連線登入",
       onclick: () => vscode.postMessage({ type: "routerSignIn" }),
     });
     signInBtn.disabled = !router.canOpenSignIn;

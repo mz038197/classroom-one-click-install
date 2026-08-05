@@ -102,6 +102,38 @@ describe("RouterLaneService", () => {
     assert.match(lane.getView().detail, /Cursor/);
   });
 
+  it("restores ready detail without exposing Classroom API Key prefix", async () => {
+    const client: RouterPortalClient = {
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("unused");
+      },
+    };
+    const { secrets, options } = baseOptions();
+    secrets.set("classroomApiKey", "vcr_sk_7053fdeadbeef");
+    const lane = new RouterLaneService(client, options);
+    await lane.restoreFromSecrets();
+    assert.equal(lane.getView().status, "ready");
+    assert.equal(lane.getView().detail, "Classroom API Key 已設定。");
+    assert.doesNotMatch(lane.getView().detail, /vcr_sk_/);
+  });
+
+  it("prompts for 連線登入 when redeeming without handoff", async () => {
+    const client: RouterPortalClient = {
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("should not redeem");
+      },
+    };
+    const { options } = baseOptions();
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("CODE");
+    await lane.redeemAndSetup();
+    assert.equal(lane.getView().status, "awaiting_sign_in");
+    assert.match(lane.getView().detail, /連線登入/);
+    assert.doesNotMatch(lane.getView().detail, /登入 Google/);
+  });
+
   it("clears classroom connection and resets to idle", async () => {
     let cleared = false;
     const client: RouterPortalClient = {
@@ -130,17 +162,4 @@ describe("RouterLaneService", () => {
     assert.equal(result.needsReload, true);
   });
 
-  it("asks for sign-in when redeeming without handoff", async () => {
-    const client: RouterPortalClient = {
-      fetchChatLanguageModelsTemplate: async () => [],
-      redeemWithHandoff: async () => {
-        throw new Error("should not redeem");
-      },
-    };
-    const { options } = baseOptions();
-    const lane = new RouterLaneService(client, options);
-    lane.setInviteCode("CODE");
-    await lane.redeemAndSetup();
-    assert.equal(lane.getView().status, "awaiting_sign_in");
-  });
 });

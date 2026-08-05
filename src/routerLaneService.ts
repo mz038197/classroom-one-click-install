@@ -43,10 +43,9 @@ export class RouterLaneService {
   private inviteCode = "";
   private pendingHandoff: string | undefined;
   private status: RouterLaneStatus = "idle";
-  private detail = "輸入邀請碼後登入 Google，即可兌換並完成 BYOK 設定。";
+  private detail = "輸入邀請碼後按「連線登入」，即可兌換並完成 BYOK 設定。";
   private classLabel?: string;
   private expiresAt?: string;
-  private lastApiKeyPrefix?: string;
   private readonly unsupportedHost: boolean;
 
   constructor(
@@ -159,7 +158,7 @@ export class RouterLaneService {
     }
     if (!this.pendingHandoff) {
       this.status = "awaiting_sign_in";
-      this.detail = "請先按「登入 Google」完成 Sign-in Handoff。";
+      this.detail = "請先按「連線登入」完成 Sign-in Handoff。";
       this.emit();
       return { needsReload: false };
     }
@@ -205,7 +204,6 @@ export class RouterLaneService {
         extensionId: this.options.extensionId,
       });
 
-      this.lastApiKeyPrefix = redeemed.api_key.slice(0, 12);
       this.classLabel =
         [redeemed.session.class_name, redeemed.session.name].filter(Boolean).join(" · ") ||
         undefined;
@@ -245,7 +243,6 @@ export class RouterLaneService {
       this.pendingHandoff = undefined;
       this.classLabel = undefined;
       this.expiresAt = undefined;
-      this.lastApiKeyPrefix = undefined;
       this.status = "idle";
       this.detail =
         "已清除課堂連線。請按右下角「重新啟動」；若要再連線請重新兌換。";
@@ -267,10 +264,9 @@ export class RouterLaneService {
     const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
     const key = await this.options.secretStore.get(secretKey);
     if (key?.startsWith("vcr_sk_")) {
-      this.lastApiKeyPrefix = key.slice(0, 12);
       if (this.status === "idle") {
         this.status = "ready";
-        this.detail = `本機已有 Classroom API Key（${this.lastApiKeyPrefix}…）。換新邀請碼請再跑一次流程；不用時可清除課堂連線。`;
+        this.detail = "Classroom API Key 已設定。";
         this.emit();
       }
     }
