@@ -7,6 +7,11 @@ import {
 } from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
 import { chatLanguageModelsPath, resolveEditorUserDir } from "./editorUserPath";
+import { CLASSROOM_CHAT_LM_SECRET_KEY } from "./hostLmSecret";
+import {
+  hostStateDbPath,
+  promoteExtensionSecretToHost,
+} from "./hostStateDb";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
 import {
@@ -109,11 +114,18 @@ export function activate(context: vscode.ExtensionContext): void {
         modelsPath: chatLanguageModelsPath(userDir),
         getClassroomApiKey: () =>
           Promise.resolve(context.secrets.get(API_KEY_SECRET)),
+        getExtensionChatLmSecret: () =>
+          Promise.resolve(context.secrets.get(CLASSROOM_CHAT_LM_SECRET_KEY)),
         storeSecret: (key, value) =>
           Promise.resolve(context.secrets.store(key, value)),
+        promoteToHost: () =>
+          promoteExtensionSecretToHost({
+            stateDbPath: hostStateDbPath(userDir),
+            extensionId: context.extension.id,
+          }),
       });
       void vscode.window.showInformationMessage(
-        `已改寫為 ${result.apiKeyRef}。請重載視窗後用 VCRouter 試一則 chat（spike 驗證）。`,
+        `已寫入 Host ${result.hostStorageKey} 並改寫為 ${result.apiKeyRef}。請重載視窗後用 VCRouter 試 chat。`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

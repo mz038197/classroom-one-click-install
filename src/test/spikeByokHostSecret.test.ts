@@ -7,7 +7,7 @@ import {
 import { spikeByokHostSecret } from "../spikeByokHostSecret";
 
 describe("spikeByokHostSecret", () => {
-  it("stores Classroom API Key under Host secret key and rewrites apiKey to ${input:…}", async () => {
+  it("stores key, promotes to Host secret row, and rewrites apiKey to ${input:…}", async () => {
     const files = new Map<string, string>();
     const target = "/tmp/user/chatLanguageModels.json";
     files.set(
@@ -26,6 +26,7 @@ describe("spikeByokHostSecret", () => {
       ),
     );
     const secrets = new Map<string, string>();
+    let promoted = false;
 
     const result = await spikeByokHostSecret({
       modelsPath: target,
@@ -33,6 +34,10 @@ describe("spikeByokHostSecret", () => {
       getClassroomApiKey: async () => undefined,
       storeSecret: async (key, value) => {
         secrets.set(key, value);
+      },
+      promoteToHost: async () => {
+        promoted = true;
+        return { hostStorageKey: "secret://chat.lm.secret.vans-classroom" };
       },
       readFile: async (p) => {
         const v = files.get(p);
@@ -50,7 +55,9 @@ describe("spikeByokHostSecret", () => {
 
     assert.equal(result.secretKey, CLASSROOM_CHAT_LM_SECRET_KEY);
     assert.equal(result.apiKeyRef, toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY));
+    assert.equal(result.hostStorageKey, "secret://chat.lm.secret.vans-classroom");
     assert.equal(secrets.get(CLASSROOM_CHAT_LM_SECRET_KEY), "vcr_sk_from_file");
+    assert.equal(promoted, true);
     const written = JSON.parse(files.get(target) ?? "null");
     assert.equal(written[0].apiKey, result.apiKeyRef);
   });
@@ -78,6 +85,9 @@ describe("spikeByokHostSecret", () => {
       storeSecret: async (key, value) => {
         secrets.set(key, value);
       },
+      promoteToHost: async () => ({
+        hostStorageKey: "secret://chat.lm.secret.vans-classroom",
+      }),
       readFile: async (p) => files.get(p)!,
       writeFile: async (p, data) => {
         files.set(p, data);
