@@ -59,7 +59,12 @@ describe("RouterLaneService", () => {
         wroteKey = apiKey;
         return "/tmp/Code/User/chatLanguageModels.json";
       },
-      writeHostSecret: async ({ plaintext }: { plaintext: string }) => {
+      writeHostSecret: async ({
+        plaintext,
+      }: {
+        plaintext: string;
+        extensionId: string;
+      }) => {
         hostPlaintext = plaintext;
         return { hostStorageKey: "secret://chat.lm.secret.-7a55c1a5" };
       },

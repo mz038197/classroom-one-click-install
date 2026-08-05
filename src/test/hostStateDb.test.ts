@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, it } from "node:test";
 import { CLASSROOM_CHAT_LM_SECRET_KEY } from "../hostLmSecret";
 import {
+  ensureHostChatLmSecret,
   extensionSecretStorageKey,
   hostChatLmSecretStorageKey,
   hostStateDbPath,
@@ -81,5 +82,42 @@ describe("writeHostChatLmSecret", () => {
       .get("secret://chat.lm.secret.-7a55c1a5") as { value: string };
     read.close();
     assert.equal(row.value, serializeSafeStorageBuffer(Buffer.from("enc:vcr_sk_test")));
+  });
+});
+
+describe("ensureHostChatLmSecret", () => {
+  it("retries promote until the extension SecretStorage row appears", async () => {
+    const dbPath = makeTempDb();
+    const blob = serializeSafeStorageBuffer(Buffer.from("v10later"));
+    const extKey = extensionSecretStorageKey(
+      "vans-coding.vans-classroom-install",
+      CLASSROOM_CHAT_LM_SECRET_KEY,
+    );
+    let attempts = 0;
+    const { hostStorageKey } = await ensureHostChatLmSecret({
+      stateDbPath: dbPath,
+      extensionId: "vans-coding.vans-classroom-install",
+      plaintext: "vcr_sk_unused",
+      sleep: async () => undefined,
+      maxAttempts: 5,
+      promote: async () => {
+        attempts += 1;
+        if (attempts < 3) {
+          throw new Error("not flushed");
+        }
+        const db = new DatabaseSync(dbPath);
+        db.prepare("INSERT INTO ItemTable (key, value) VALUES (?, ?)").run(extKey, blob);
+        db.close();
+        return promoteExtensionSecretToHost({
+          stateDbPath: dbPath,
+          extensionId: "vans-coding.vans-classroom-install",
+        });
+      },
+      writeDirect: async () => {
+        throw new Error("should not encrypt");
+      },
+    });
+    assert.equal(hostStorageKey, "secret://chat.lm.secret.-7a55c1a5");
+    assert.equal(attempts, 3);
   });
 });

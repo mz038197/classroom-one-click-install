@@ -162,3 +162,60 @@ export async function writeHostChatLmSecret(options: {
   await upsertItemTableValue(options.stateDbPath, hostStorageKey, value);
   return { hostStorageKey };
 }
+
+/**
+ * After extension SecretStorage.store, wait for the row to flush into state.vscdb
+ * then copy it to the Host chat.lm.secret.* key. Falls back to Electron safeStorage
+ * encrypt only if promote never sees the extension row (safeStorage is often missing
+ * in the extension host).
+ */
+export async function ensureHostChatLmSecret(options: {
+  stateDbPath: string;
+  extensionId: string;
+  plaintext: string;
+  secretKey?: string;
+  sleep?: (ms: number) => Promise<void>;
+  maxAttempts?: number;
+  encryptString?: (value: string) => Uint8Array;
+  promote?: typeof promoteExtensionSecretToHost;
+  writeDirect?: typeof writeHostChatLmSecret;
+}): Promise<{ hostStorageKey: string }> {
+  const sleep =
+    options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const maxAttempts = options.maxAttempts ?? 25;
+  const promote = options.promote ?? promoteExtensionSecretToHost;
+  const writeDirect = options.writeDirect ?? writeHostChatLmSecret;
+
+  let lastPromoteError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await promote({
+        stateDbPath: options.stateDbPath,
+        extensionId: options.extensionId,
+        secretKey: options.secretKey,
+      });
+    } catch (err) {
+      lastPromoteError = err;
+      await sleep(40 + attempt * 20);
+    }
+  }
+
+  try {
+    return await writeDirect({
+      stateDbPath: options.stateDbPath,
+      plaintext: options.plaintext,
+      secretKey: options.secretKey,
+      encryptString: options.encryptString,
+    });
+  } catch (encryptErr) {
+    const promoteMsg =
+      lastPromoteError instanceof Error
+        ? lastPromoteError.message
+        : String(lastPromoteError);
+    const encryptMsg =
+      encryptErr instanceof Error ? encryptErr.message : String(encryptErr);
+    throw new Error(
+      `無法寫入 Host Classroom API Key（等待 SecretStorage 寫入失敗：${promoteMsg}；safeStorage：${encryptMsg}）`,
+    );
+  }
+}

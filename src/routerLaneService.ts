@@ -6,7 +6,7 @@ import {
   isUnsupportedByokHost,
   toChatLmSecretInputRef,
 } from "./hostLmSecret";
-import { hostStateDbPath, writeHostChatLmSecret } from "./hostStateDb";
+import { ensureHostChatLmSecret, hostStateDbPath } from "./hostStateDb";
 import type { RouterPortalClient } from "./routerPortalClient";
 import { parseHandoffToken } from "./routerHandoffUri";
 import { writeByokFile } from "./writeByokFile";
@@ -68,10 +68,11 @@ export class RouterLaneService {
         template: ChatLanguageModelProvider[];
         apiKey: string;
       }) => Promise<string>;
-      /** Write Classroom API Key into Host chat.lm.secret.* (not extension-scoped copy). */
+      /** Ensure Host chat.lm.secret.* row exists (promote-with-retry / encrypt fallback). */
       writeHostSecret?: (args: {
         stateDbPath: string;
         plaintext: string;
+        extensionId: string;
       }) => Promise<{ hostStorageKey: string }>;
       clearByok?: typeof clearClassroomConnection;
     },
@@ -190,12 +191,18 @@ export class RouterLaneService {
         redeemed.api_key,
       );
 
-      // Write Host row directly — do not copy from extension SecretStorage
-      // (store may not have flushed to state.vscdb yet).
-      const writeHost = this.options.writeHostSecret ?? writeHostChatLmSecret;
+      // Prefer promote-with-retry after secrets.store (extension host often has no safeStorage).
+      const writeHost =
+        this.options.writeHostSecret ??
+        ((args: {
+          stateDbPath: string;
+          plaintext: string;
+          extensionId: string;
+        }) => ensureHostChatLmSecret(args));
       await writeHost({
         stateDbPath: hostStateDbPath(userDir),
         plaintext: redeemed.api_key,
+        extensionId: this.options.extensionId,
       });
 
       this.lastApiKeyPrefix = redeemed.api_key.slice(0, 12);
