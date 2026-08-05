@@ -72,6 +72,29 @@ export async function upsertItemTableValue(
   }
 }
 
+export async function deleteItemTableKey(
+  dbPath: string,
+  key: string,
+): Promise<void> {
+  const db = await openStateDb(dbPath);
+  try {
+    db.prepare("DELETE FROM ItemTable WHERE key = ?").run(key);
+  } finally {
+    db.close();
+  }
+}
+
+export async function deleteHostChatLmSecret(options: {
+  stateDbPath: string;
+  secretKey?: string;
+}): Promise<void> {
+  const secretKey = options.secretKey ?? CLASSROOM_CHAT_LM_SECRET_KEY;
+  await deleteItemTableKey(
+    options.stateDbPath,
+    hostChatLmSecretStorageKey(secretKey),
+  );
+}
+
 /**
  * Copy an already-encrypted SecretStorage blob to the Host chat.lm.secret.* key
  * that Copilot resolves for ${input:chat.lm.secret.…}.

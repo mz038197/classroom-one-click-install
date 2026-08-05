@@ -47,13 +47,17 @@ _Avoid_: 從市集安裝, 本機開發 Host（F5）當課堂安裝
 _Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把擴充輸入框本身當成新的匿名兌換破口
 
 **Classroom API Key**:
-兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它；換新邀請碼時再跑一次流程並覆寫。
+兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它（Host secret、固定 hex id、覆寫同一格）；換新邀請碼時再跑一次流程並覆寫。本機不會隨課堂結束自動刪除。
 _Avoid_: Portal session, Google token, upstream provider key
+
+**Clear Classroom Connection**:
+學生主動清除本機課堂連線：刪 Host／擴充內的 Classroom API Key、移除 VCRouter provider，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter）。
+_Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積
 
 **Sign-in Handoff**:
 瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。
 _Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失敗就只能改走 Portal
 
 **BYOK Setup**:
-把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。
-_Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源
+把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。僅支援 VS Code；Cursor 不自動寫入，改提示 Portal／手動。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。
+_Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret

@@ -19,6 +19,11 @@ export function isPlainClassroomApiKey(value: string | undefined): boolean {
   return typeof value === "string" && value.startsWith("vcr_sk_");
 }
 
+export const VCROUTER_PROVIDER_MATCH = {
+  name: "VCRouter",
+  vendor: "customendpoint",
+} as const;
+
 export function applyHostSecretRefToProviders(
   providers: ChatLanguageModelProvider[],
   match: { name: string; vendor: string },
@@ -30,4 +35,19 @@ export function applyHostSecretRefToProviders(
     }
     return provider;
   });
+}
+
+export function removeMatchingProviders(
+  providers: ChatLanguageModelProvider[],
+  match: { name: string; vendor: string },
+): ChatLanguageModelProvider[] {
+  return providers.filter(
+    (provider) =>
+      !(provider.name === match.name && provider.vendor === match.vendor),
+  );
+}
+
+/** True when Host is Cursor — classroom auto BYOK is out of scope. */
+export function isUnsupportedByokHost(uriScheme: string): boolean {
+  return (uriScheme || "").toLowerCase() === "cursor";
 }

@@ -225,6 +225,15 @@
     redeemBtn.disabled = !router.canRedeem;
     routerActions.appendChild(signInBtn);
     routerActions.appendChild(redeemBtn);
+    if (router.canClear) {
+      const clearBtn = el("button", {
+        className: "secondary",
+        type: "button",
+        text: router.clearLabel || "清除課堂連線",
+        onclick: () => vscode.postMessage({ type: "routerClear" }),
+      });
+      routerActions.appendChild(clearBtn);
+    }
     routerBody.appendChild(routerActions);
     app.appendChild(
       el(

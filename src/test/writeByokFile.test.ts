@@ -15,7 +15,7 @@ describe("writeByokFile", () => {
           models: [{ id: "m1", name: "m1", url: "https://ai.vanscoding.com/v1" }],
         },
       ],
-      apiKey: "vcr_sk_abc",
+      apiKey: "${input:chat.lm.secret.-7a55c1a5}",
       readFile: async (p) => {
         const v = files.get(p);
         if (v === undefined) {
@@ -33,7 +33,7 @@ describe("writeByokFile", () => {
 
     assert.match(target, /chatLanguageModels\.json$/);
     const written = JSON.parse(files.get(target) ?? "null");
-    assert.equal(written[0].apiKey, "vcr_sk_abc");
+    assert.equal(written[0].apiKey, "${input:chat.lm.secret.-7a55c1a5}");
     assert.equal(written[0].name, "VCRouter");
   });
 });

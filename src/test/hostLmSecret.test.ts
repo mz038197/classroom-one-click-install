@@ -5,6 +5,8 @@ import {
   applyHostSecretRefToProviders,
   isChatLmSecretInputRef,
   isPlainClassroomApiKey,
+  isUnsupportedByokHost,
+  removeMatchingProviders,
   toChatLmSecretInputRef,
 } from "../hostLmSecret";
 
@@ -47,5 +49,24 @@ describe("applyHostSecretRefToProviders", () => {
       providers[1]?.apiKey,
       "${input:chat.lm.secret.-7a55c1a5}",
     );
+  });
+});
+
+describe("removeMatchingProviders / isUnsupportedByokHost", () => {
+  it("drops only the matched provider", () => {
+    const next = removeMatchingProviders(
+      [
+        { name: "OpenRouter", vendor: "openrouter" },
+        { name: "VCRouter", vendor: "customendpoint" },
+      ],
+      { name: "VCRouter", vendor: "customendpoint" },
+    );
+    assert.equal(next.length, 1);
+    assert.equal(next[0]?.name, "OpenRouter");
+  });
+
+  it("treats Cursor as unsupported BYOK host", () => {
+    assert.equal(isUnsupportedByokHost("cursor"), true);
+    assert.equal(isUnsupportedByokHost("vscode"), false);
   });
 });

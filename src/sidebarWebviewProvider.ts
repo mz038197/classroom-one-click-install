@@ -17,6 +17,7 @@ type WebviewInbound =
   | { type: "setInviteCode"; inviteCode: string }
   | { type: "routerSignIn" }
   | { type: "routerRedeem" }
+  | { type: "routerClear" }
   | { type: "routerHandoffPaste"; raw: string };
 
 export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
@@ -35,6 +36,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       runAction: (actionId: string) => Promise<void>;
       routerSignIn: () => Promise<void>;
       routerRedeem: () => Promise<void>;
+      routerClear: () => Promise<void>;
       routerHandoffPaste: (raw: string) => Promise<void>;
     },
   ) {}
@@ -110,6 +112,9 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
         return;
       case "routerRedeem":
         await this.handlers.routerRedeem();
+        return;
+      case "routerClear":
+        await this.handlers.routerClear();
         return;
       case "routerHandoffPaste":
         if (typeof msg.raw === "string") {

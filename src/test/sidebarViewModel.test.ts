@@ -11,6 +11,7 @@ const routerIdle: RouterLaneView = {
   detail: "輸入邀請碼",
   canRedeem: false,
   canOpenSignIn: true,
+  canClear: false,
 };
 
 const envReady: EnvironmentLaneView = {

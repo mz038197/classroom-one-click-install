@@ -42,8 +42,10 @@ export type SidebarRouterVm = {
   classLabel?: string;
   canOpenSignIn: boolean;
   canRedeem: boolean;
+  canClear: boolean;
   signInLabel: string;
   redeemLabel: string;
+  clearLabel: string;
 };
 
 export type SidebarViewModel = {
@@ -91,8 +93,10 @@ export function buildSidebarViewModel(
       ...(router.classLabel ? { classLabel: router.classLabel } : {}),
       canOpenSignIn: router.canOpenSignIn,
       canRedeem: router.canRedeem,
+      canClear: router.canClear,
       signInLabel: "登入 Google",
       redeemLabel: "兌換並設定",
+      clearLabel: "清除課堂連線",
     },
     environment: {
       toolchainReady: env.toolchainReady,

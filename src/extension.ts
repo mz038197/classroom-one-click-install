@@ -6,30 +6,25 @@ import {
   executeEnvironmentInstallPlan,
 } from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
-import { chatLanguageModelsPath, resolveEditorUserDir } from "./editorUserPath";
-import { CLASSROOM_CHAT_LM_SECRET_KEY } from "./hostLmSecret";
-import {
-  hostStateDbPath,
-  promoteExtensionSecretToHost,
-} from "./hostStateDb";
+import { resolveEditorUserDir } from "./editorUserPath";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
 import {
   createRouterPortalClient,
   defaultRouterBaseUrl,
 } from "./routerPortalClient";
-import { RouterLaneService } from "./routerLaneService";
+import {
+  RouterLaneService,
+  type RouterLaneActionResult,
+} from "./routerLaneService";
 import {
   INSTALL_ENVIRONMENT_TOOL_COMMAND,
   RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
 } from "./sidebarCommands";
 import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
-import { spikeByokHostSecret } from "./spikeByokHostSecret";
 
 const API_KEY_SECRET = "classroomApiKey";
-const SPIKE_BYOK_HOST_SECRET_COMMAND =
-  "vansClassroomInstall.spikeByokHostSecret";
 
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
@@ -50,14 +45,37 @@ export function activate(context: vscode.ExtensionContext): void {
         platform: process.platform,
         uriScheme: vscode.env.uriScheme,
       }),
+    uriScheme: vscode.env.uriScheme,
+    extensionId: context.extension.id,
     secretStore: {
       get: (key) => context.secrets.get(key),
       store: (key, value) => context.secrets.store(key, value),
+      delete: (key) => context.secrets.delete(key),
     },
     apiKeySecretKey: API_KEY_SECRET,
   });
 
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
+
+  const offerReload = async (message: string): Promise<void> => {
+    const choice = await vscode.window.showInformationMessage(
+      message,
+      "重載視窗",
+    );
+    if (choice === "重載視窗") {
+      await vscode.commands.executeCommand("workbench.action.reloadWindow");
+    }
+  };
+
+  const afterRouterAction = async (
+    result: RouterLaneActionResult,
+    reloadMessage: string,
+  ): Promise<void> => {
+    refreshUi();
+    if (result.needsReload) {
+      await offerReload(reloadMessage);
+    }
+  };
 
   const provider = new SidebarWebviewProvider(
     context.extensionUri,
@@ -70,9 +88,39 @@ export function activate(context: vscode.ExtensionContext): void {
       runAction: async (actionId) => {
         await courseLane.runAction(actionId);
       },
-      routerSignIn: () => routerLane.openGoogleSignIn(),
-      routerRedeem: () => routerLane.redeemAndSetup(),
-      routerHandoffPaste: (raw) => routerLane.acceptHandoffInput(raw),
+      routerSignIn: async () => {
+        await routerLane.openGoogleSignIn();
+        refreshUi();
+      },
+      routerRedeem: async () => {
+        const result = await routerLane.redeemAndSetup();
+        await afterRouterAction(
+          result,
+          "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
+        );
+      },
+      routerClear: async () => {
+        const confirm = await vscode.window.showWarningMessage(
+          "確定清除課堂連線？將移除 VCRouter 與本機 Classroom API Key，其他模型設定不受影響。",
+          { modal: true },
+          "清除",
+        );
+        if (confirm !== "清除") {
+          return;
+        }
+        const result = await routerLane.clearClassroomConnection();
+        await afterRouterAction(
+          result,
+          "已清除課堂連線。請重載視窗使變更生效。",
+        );
+      },
+      routerHandoffPaste: async (raw) => {
+        const result = await routerLane.acceptHandoffInput(raw);
+        await afterRouterAction(
+          result,
+          "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
+        );
+      },
     },
   );
 
@@ -101,35 +149,6 @@ export function activate(context: vscode.ExtensionContext): void {
         environmentLane.getView().tools.find((t) => t.id === toolId)?.detail ??
         "安裝失敗";
       void vscode.window.showErrorMessage(detail);
-    }
-  };
-
-  const runSpikeByokHostSecret = async (): Promise<void> => {
-    try {
-      const userDir = resolveEditorUserDir({
-        platform: process.platform,
-        uriScheme: vscode.env.uriScheme,
-      });
-      const result = await spikeByokHostSecret({
-        modelsPath: chatLanguageModelsPath(userDir),
-        getClassroomApiKey: () =>
-          Promise.resolve(context.secrets.get(API_KEY_SECRET)),
-        getExtensionChatLmSecret: () =>
-          Promise.resolve(context.secrets.get(CLASSROOM_CHAT_LM_SECRET_KEY)),
-        storeSecret: (key, value) =>
-          Promise.resolve(context.secrets.store(key, value)),
-        promoteToHost: () =>
-          promoteExtensionSecretToHost({
-            stateDbPath: hostStateDbPath(userDir),
-            extensionId: context.extension.id,
-          }),
-      });
-      void vscode.window.showInformationMessage(
-        `已寫入 Host ${result.hostStorageKey} 並改寫為 ${result.apiKeyRef}。請重載視窗後用 VCRouter 試 chat。`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      void vscode.window.showErrorMessage(`BYOK secret spike 失敗：${message}`);
     }
   };
 
@@ -162,8 +181,11 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.window.registerUriHandler({
       handleUri(uri: vscode.Uri): void {
-        void routerLane.acceptHandoffInput(uri.toString(true)).then(() => {
-          refreshUi();
+        void routerLane.acceptHandoffInput(uri.toString(true)).then((result) => {
+          void afterRouterAction(
+            result,
+            "BYOK 已寫入。請重載視窗後選 VCRouter 模型。",
+          );
           void vscode.commands.executeCommand(
             "workbench.view.extension.vansClassroomInstall",
           );
@@ -182,9 +204,6 @@ export function activate(context: vscode.ExtensionContext): void {
         void installEnvironmentTool(toolId);
       },
     ),
-    vscode.commands.registerCommand(SPIKE_BYOK_HOST_SECRET_COMMAND, () => {
-      void runSpikeByokHostSecret();
-    }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       watchCatalog();
       reloadCatalog();
