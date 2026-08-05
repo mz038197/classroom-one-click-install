@@ -12,7 +12,7 @@ describe("toChatLmSecretInputRef", () => {
   it("wraps the Host secret key in ${input:…}", () => {
     assert.equal(
       toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY),
-      "${input:chat.lm.secret.vans-classroom}",
+      "${input:chat.lm.secret.-7a55c1a5}",
     );
   });
 });
@@ -20,13 +20,13 @@ describe("toChatLmSecretInputRef", () => {
 describe("isChatLmSecretInputRef / isPlainClassroomApiKey", () => {
   it("detects Host secret refs vs plaintext Classroom API Key", () => {
     assert.equal(
-      isChatLmSecretInputRef("${input:chat.lm.secret.vans-classroom}"),
+      isChatLmSecretInputRef("${input:chat.lm.secret.-7a55c1a5}"),
       true,
     );
     assert.equal(isChatLmSecretInputRef("vcr_sk_abc"), false);
     assert.equal(isPlainClassroomApiKey("vcr_sk_abc"), true);
     assert.equal(
-      isPlainClassroomApiKey("${input:chat.lm.secret.vans-classroom}"),
+      isPlainClassroomApiKey("${input:chat.lm.secret.-7a55c1a5}"),
       false,
     );
   });
@@ -40,12 +40,12 @@ describe("applyHostSecretRefToProviders", () => {
         { name: "VCRouter", vendor: "customendpoint", apiKey: "vcr_sk_old" },
       ],
       { name: "VCRouter", vendor: "customendpoint" },
-      "${input:chat.lm.secret.vans-classroom}",
+      "${input:chat.lm.secret.-7a55c1a5}",
     );
     assert.equal(providers[0]?.apiKey, "keep");
     assert.equal(
       providers[1]?.apiKey,
-      "${input:chat.lm.secret.vans-classroom}",
+      "${input:chat.lm.secret.-7a55c1a5}",
     );
   });
 });

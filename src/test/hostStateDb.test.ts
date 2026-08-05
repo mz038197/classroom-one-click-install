@@ -31,11 +31,11 @@ describe("hostStateDb keys", () => {
     );
     assert.equal(
       hostChatLmSecretStorageKey(),
-      "secret://chat.lm.secret.vans-classroom",
+      "secret://chat.lm.secret.-7a55c1a5",
     );
     assert.equal(
       extensionSecretStorageKey("vans-coding.vans-classroom-install", CLASSROOM_CHAT_LM_SECRET_KEY),
-      'secret://{"extensionId":"vans-coding.vans-classroom-install","key":"chat.lm.secret.vans-classroom"}',
+      'secret://{"extensionId":"vans-coding.vans-classroom-install","key":"chat.lm.secret.-7a55c1a5"}',
     );
   });
 });
@@ -62,7 +62,7 @@ describe("promoteExtensionSecretToHost", () => {
       .prepare("SELECT value FROM ItemTable WHERE key = ?")
       .get(hostStorageKey) as { value: string };
     read.close();
-    assert.equal(hostStorageKey, "secret://chat.lm.secret.vans-classroom");
+    assert.equal(hostStorageKey, "secret://chat.lm.secret.-7a55c1a5");
     assert.equal(row.value, blob);
   });
 });
@@ -78,7 +78,7 @@ describe("writeHostChatLmSecret", () => {
     const read = new DatabaseSync(dbPath);
     const row = read
       .prepare("SELECT value FROM ItemTable WHERE key = ?")
-      .get("secret://chat.lm.secret.vans-classroom") as { value: string };
+      .get("secret://chat.lm.secret.-7a55c1a5") as { value: string };
     read.close();
     assert.equal(row.value, serializeSafeStorageBuffer(Buffer.from("enc:vcr_sk_test")));
   });

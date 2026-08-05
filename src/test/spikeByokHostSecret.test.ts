@@ -37,7 +37,7 @@ describe("spikeByokHostSecret", () => {
       },
       promoteToHost: async () => {
         promoted = true;
-        return { hostStorageKey: "secret://chat.lm.secret.vans-classroom" };
+        return { hostStorageKey: "secret://chat.lm.secret.-7a55c1a5" };
       },
       readFile: async (p) => {
         const v = files.get(p);
@@ -55,7 +55,7 @@ describe("spikeByokHostSecret", () => {
 
     assert.equal(result.secretKey, CLASSROOM_CHAT_LM_SECRET_KEY);
     assert.equal(result.apiKeyRef, toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY));
-    assert.equal(result.hostStorageKey, "secret://chat.lm.secret.vans-classroom");
+    assert.equal(result.hostStorageKey, "secret://chat.lm.secret.-7a55c1a5");
     assert.equal(secrets.get(CLASSROOM_CHAT_LM_SECRET_KEY), "vcr_sk_from_file");
     assert.equal(promoted, true);
     const written = JSON.parse(files.get(target) ?? "null");
@@ -86,7 +86,7 @@ describe("spikeByokHostSecret", () => {
         secrets.set(key, value);
       },
       promoteToHost: async () => ({
-        hostStorageKey: "secret://chat.lm.secret.vans-classroom",
+        hostStorageKey: "secret://chat.lm.secret.-7a55c1a5",
       }),
       readFile: async (p) => files.get(p)!,
       writeFile: async (p, data) => {
