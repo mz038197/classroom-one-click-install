@@ -6,7 +6,7 @@ import {
   executeEnvironmentInstallPlan,
 } from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
-import { resolveEditorUserDir } from "./editorUserPath";
+import { chatLanguageModelsPath, resolveEditorUserDir } from "./editorUserPath";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
 import {
@@ -20,8 +20,11 @@ import {
   RUN_INSTALL_ACTION_COMMAND,
 } from "./sidebarCommands";
 import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
+import { spikeByokHostSecret } from "./spikeByokHostSecret";
 
 const API_KEY_SECRET = "classroomApiKey";
+const SPIKE_BYOK_HOST_SECRET_COMMAND =
+  "vansClassroomInstall.spikeByokHostSecret";
 
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
@@ -96,6 +99,28 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   };
 
+  const runSpikeByokHostSecret = async (): Promise<void> => {
+    try {
+      const userDir = resolveEditorUserDir({
+        platform: process.platform,
+        uriScheme: vscode.env.uriScheme,
+      });
+      const result = await spikeByokHostSecret({
+        modelsPath: chatLanguageModelsPath(userDir),
+        getClassroomApiKey: () =>
+          Promise.resolve(context.secrets.get(API_KEY_SECRET)),
+        storeSecret: (key, value) =>
+          Promise.resolve(context.secrets.store(key, value)),
+      });
+      void vscode.window.showInformationMessage(
+        `已改寫為 ${result.apiKeyRef}。請重載視窗後用 VCRouter 試一則 chat（spike 驗證）。`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      void vscode.window.showErrorMessage(`BYOK secret spike 失敗：${message}`);
+    }
+  };
+
   const watchCatalog = (): void => {
     catalogWatcher?.dispose();
     catalogWatcher = undefined;
@@ -145,6 +170,9 @@ export function activate(context: vscode.ExtensionContext): void {
         void installEnvironmentTool(toolId);
       },
     ),
+    vscode.commands.registerCommand(SPIKE_BYOK_HOST_SECRET_COMMAND, () => {
+      void runSpikeByokHostSecret();
+    }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       watchCatalog();
       reloadCatalog();

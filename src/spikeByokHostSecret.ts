@@ -1,0 +1,67 @@
+import fs from "node:fs/promises";
+import type { ChatLanguageModelProvider } from "./byokSetup";
+import {
+  CLASSROOM_CHAT_LM_SECRET_KEY,
+  applyHostSecretRefToProviders,
+  isPlainClassroomApiKey,
+  toChatLmSecretInputRef,
+} from "./hostLmSecret";
+
+export type SpikeByokHostSecretResult = {
+  modelsPath: string;
+  secretKey: string;
+  apiKeyRef: string;
+};
+
+/**
+ * Spike: move Classroom API Key into Host secret key chat.lm.secret.*
+ * and point VCRouter.apiKey at ${input:…}. Hypothesis: extension SecretStorage
+ * under that key name is enough for Copilot to resolve the ref.
+ */
+export async function spikeByokHostSecret(options: {
+  modelsPath: string;
+  match?: { name: string; vendor: string };
+  getClassroomApiKey: () => Promise<string | undefined>;
+  storeSecret: (key: string, value: string) => Promise<void>;
+  readFile?: (path: string) => Promise<string>;
+  writeFile?: (path: string, data: string) => Promise<void>;
+}): Promise<SpikeByokHostSecretResult> {
+  const match = options.match ?? { name: "VCRouter", vendor: "customendpoint" };
+  const readFile = options.readFile ?? ((p) => fs.readFile(p, "utf8"));
+  const writeFile = options.writeFile ?? ((p, d) => fs.writeFile(p, d, "utf8"));
+
+  const raw = await readFile(options.modelsPath);
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error("chatLanguageModels.json 必須是陣列");
+  }
+  const providers = parsed as ChatLanguageModelProvider[];
+  const target = providers.find(
+    (p) => p.name === match.name && p.vendor === match.vendor,
+  );
+  if (!target) {
+    throw new Error(`找不到 ${match.vendor}/${match.name} provider`);
+  }
+
+  const fromStore = await options.getClassroomApiKey();
+  const fromFile = typeof target.apiKey === "string" ? target.apiKey : undefined;
+  const apiKey = isPlainClassroomApiKey(fromStore)
+    ? fromStore
+    : isPlainClassroomApiKey(fromFile)
+      ? fromFile
+      : undefined;
+  if (!apiKey) {
+    throw new Error(
+      "找不到明文 Classroom API Key（擴充 SecretStorage 或檔內 vcr_sk_…）。請先跑完兌換。",
+    );
+  }
+
+  const secretKey = CLASSROOM_CHAT_LM_SECRET_KEY;
+  const apiKeyRef = toChatLmSecretInputRef(secretKey);
+  await options.storeSecret(secretKey, apiKey);
+
+  const updated = applyHostSecretRefToProviders(providers, match, apiKeyRef);
+  await writeFile(options.modelsPath, `${JSON.stringify(updated, null, 2)}\n`);
+
+  return { modelsPath: options.modelsPath, secretKey, apiKeyRef };
+}

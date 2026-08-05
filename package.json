@@ -18,7 +18,8 @@
   ],
   "activationEvents": [
     "onView:vansClassroomInstall.sidebar",
-    "onUri"
+    "onUri",
+    "onCommand:vansClassroomInstall.spikeByokHostSecret"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -44,6 +45,10 @@
       {
         "command": "vansClassroomInstall.installEnvironmentTool",
         "title": "安裝／修復環境工具"
+      },
+      {
+        "command": "vansClassroomInstall.spikeByokHostSecret",
+        "title": "（實驗）改寫 BYOK 為 Host secret 參照"
       }
     ],
     "viewsContainers": {
