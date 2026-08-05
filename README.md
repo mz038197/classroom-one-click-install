@@ -20,11 +20,14 @@
 
 市集安裝後，編輯器可能自動更新擴充功能；一般課堂接受自動更新。若某次課必須全員同版，改發當日 GitHub Release 上的 `.vsix` 側載。
 
-### 學生：本課 Catalog
+### 學生：課堂連線（Router）＋本課 Catalog
 
-1. 把 `classroom-installs.yaml` 放到**工作區根目錄**（可直接用 repo 內示例，或老師改過的版本）。
-2. 側邊欄上方為 Environment Lane（uv／git／Node）：未就緒就「安裝」，裝完依提示**重開終端**再「重新檢查」。
-3. 下方 Course Lane 會列出本課動作；點選 → 確認完整 command → 在整合終端機執行。
+1. 側邊欄最上方 **課堂連線（Router Lane）**：輸入邀請碼 → 登入 Google → 兌換並自動寫入 BYOK（模型清單＋ API key）。深連結失敗時用瀏覽器一次性貼碼。換新邀請碼再跑一次即可。
+2. 把 `classroom-installs.yaml` 放到**工作區根目錄**（可直接用 repo 內示例，或老師改過的版本）。
+3. Environment Lane（uv／git／Node）：未就緒就「安裝」，裝完依提示**重開終端**再「重新檢查」。
+4. Course Lane 列出本課動作；點選 → 確認完整 command → 在整合終端機執行。
+
+預設 Router：`https://ai.vanscoding.com`（設定 `vansClassroomInstall.routerBaseUrl` 可改）。Portal 網頁路徑為備援。
 
 ## 備援：VSIX 側載
 

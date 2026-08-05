@@ -8,6 +8,7 @@
 
   /** Session 內記住收合；webview 腳本重載後回到展開。 */
   const laneCollapsed = {
+    router: false,
     environment: false,
     course: false,
   };
@@ -76,7 +77,7 @@
   }
 
   /**
-   * @param {"environment" | "course"} laneId
+   * @param {"router" | "environment" | "course"} laneId
    * @param {string} title
    * @param {HTMLElement | null} trailing
    */
@@ -144,6 +145,98 @@
       ),
     );
     app.appendChild(hero);
+
+    const router = vm.router || {
+      status: "idle",
+      statusLabel: "尚未設定",
+      inviteCode: "",
+      detail: "",
+      canOpenSignIn: true,
+      canRedeem: false,
+      signInLabel: "登入 Google",
+      redeemLabel: "兌換並設定",
+    };
+    const routerHead = laneHeader("router", "課堂連線", null);
+    const routerBody = el("div", { className: "lane-body" });
+    routerBody.appendChild(
+      el("span", {
+        className: statusClass(router.status),
+        text: router.statusLabel,
+      }),
+    );
+    if (router.classLabel) {
+      routerBody.appendChild(
+        el("p", { className: "card-detail", text: router.classLabel }),
+      );
+    }
+    routerBody.appendChild(
+      el("p", { className: "card-detail", text: router.detail || "" }),
+    );
+    const inviteField = el(
+      "div",
+      { className: "field" },
+      el("label", { text: "邀請碼", for: "invite-code" }),
+      el("input", {
+        id: "invite-code",
+        type: "text",
+        value: router.inviteCode || "",
+        placeholder: "老師提供的邀請碼",
+        autocomplete: "off",
+        oninput: (ev) => {
+          const value = ev.target && ev.target.value != null ? String(ev.target.value) : "";
+          vscode.postMessage({ type: "setInviteCode", inviteCode: value });
+        },
+      }),
+    );
+    routerBody.appendChild(inviteField);
+    const pasteField = el(
+      "div",
+      { className: "field" },
+      el("label", { text: "一次性貼碼（深連結失敗時）", for: "handoff-paste" }),
+      el("textarea", {
+        id: "handoff-paste",
+        placeholder: "從瀏覽器複製貼碼到這裡",
+      }),
+    );
+    routerBody.appendChild(pasteField);
+    const routerActions = el("div", { className: "row-actions" });
+    const signInBtn = el("button", {
+      className: "primary",
+      type: "button",
+      text: router.signInLabel || "登入 Google",
+      onclick: () => vscode.postMessage({ type: "routerSignIn" }),
+    });
+    signInBtn.disabled = !router.canOpenSignIn;
+    const redeemBtn = el("button", {
+      className: "secondary",
+      type: "button",
+      text: router.redeemLabel || "兌換並設定",
+      onclick: () => {
+        const paste = document.getElementById("handoff-paste");
+        const pasteValue =
+          paste instanceof HTMLTextAreaElement ? paste.value.trim() : "";
+        if (pasteValue) {
+          vscode.postMessage({ type: "routerHandoffPaste", raw: pasteValue });
+        } else {
+          vscode.postMessage({ type: "routerRedeem" });
+        }
+      },
+    });
+    redeemBtn.disabled = !router.canRedeem;
+    routerActions.appendChild(signInBtn);
+    routerActions.appendChild(redeemBtn);
+    routerBody.appendChild(routerActions);
+    app.appendChild(
+      el(
+        "section",
+        {
+          className: "lane" + (laneCollapsed.router ? " collapsed" : ""),
+          "data-lane": "router",
+        },
+        routerHead,
+        routerBody,
+      ),
+    );
 
     const recheck = el("button", {
       className: "secondary",

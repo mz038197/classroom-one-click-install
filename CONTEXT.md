@@ -1,6 +1,6 @@
 # Classroom One-Click Install
 
-課堂用編輯器擴充功能：學生點選項目以完成環境工具或本課安裝動作。此檔只記領域用語。
+課堂用編輯器擴充功能：學生點選項目以完成環境工具或本課安裝動作，並可在擴充內完成 router 邀請兌換與 BYOK 設定。此檔只記領域用語。
 
 ## Language
 
@@ -20,8 +20,12 @@ _Avoid_: 全域模組, 系統套件（太寬）
 放在學生工作區根目錄的策展清單檔 `classroom-installs.yaml`，以頂層 `actions` 列出本課的 Install Action。
 _Avoid_: 巢狀 `groups`（已撤回）, 遙控清單（MVP 不做）, 應用內建唯一清單, 多份清單（MVP 不做）
 
+**Router Lane**:
+側邊欄最上方區塊（學生可見標題「課堂連線」）：學生輸入 Invite Code、完成 Sign-in Handoff 與兌換，並執行 BYOK Setup；可整區收合／展開。課堂主路徑在此；Portal 網頁兌換與下載 install 腳本僅為備援。
+_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑
+
 **Environment Lane**:
-側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（與 Course Lane 並列的兩大區之一）。
+側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。
 
 **Course Lane**:
 側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。
@@ -37,3 +41,19 @@ _Avoid_: 市集側載, Open VSX 安裝（本產品不上架 Open VSX）
 **Sideload**:
 以 `.vsix` 檔直接安裝擴充功能的備援路徑；用於 Cursor、離線、市集異常，或需固定某一版本時。
 _Avoid_: 從市集安裝, 本機開發 Host（F5）當課堂安裝
+
+**Invite Code**:
+老師為某一課堂發出、給學生兌換用的短碼；學生只在擴充內輸入，不經深連結或開啟登入的 URL 傳遞。擴充內輸入不改變既有兌換威脅模型（仍須 Google 身分＋有效碼）；不在此產品範圍內單獨加硬 router（如 rate limit）。
+_Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把擴充輸入框本身當成新的匿名兌換破口
+
+**Classroom API Key**:
+兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它；換新邀請碼時再跑一次流程並覆寫。
+_Avoid_: Portal session, Google token, upstream provider key
+
+**Sign-in Handoff**:
+瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。
+_Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失敗就只能改走 Portal
+
+**BYOK Setup**:
+把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。
+_Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { CourseLaneService } from "./courseLaneService";
 import type { EnvironmentLaneService } from "./environmentLane";
+import type { RouterLaneService } from "./routerLaneService";
 import type { EnvironmentToolId } from "./toolProbe";
 import { buildSidebarViewModel } from "./sidebarViewModel";
 import { getSidebarWebviewHtml } from "./sidebarWebviewHtml";
@@ -12,7 +13,11 @@ type WebviewInbound =
   | { type: "ready" }
   | { type: "recheck" }
   | { type: "installEnv"; toolId: EnvironmentToolId }
-  | { type: "runAction"; actionId: string };
+  | { type: "runAction"; actionId: string }
+  | { type: "setInviteCode"; inviteCode: string }
+  | { type: "routerSignIn" }
+  | { type: "routerRedeem" }
+  | { type: "routerHandoffPaste"; raw: string };
 
 export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = VIEW_TYPE;
@@ -23,10 +28,14 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri,
     private readonly courseLane: CourseLaneService,
     private readonly environmentLane: EnvironmentLaneService,
+    private readonly routerLane: RouterLaneService,
     private readonly handlers: {
       recheck: () => Promise<void>;
       installEnv: (toolId: EnvironmentToolId) => Promise<void>;
       runAction: (actionId: string) => Promise<void>;
+      routerSignIn: () => Promise<void>;
+      routerRedeem: () => Promise<void>;
+      routerHandoffPaste: (raw: string) => Promise<void>;
     },
   ) {}
 
@@ -91,6 +100,22 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
           await this.handlers.runAction(msg.actionId);
         }
         return;
+      case "setInviteCode":
+        if (typeof msg.inviteCode === "string") {
+          this.routerLane.setInviteCode(msg.inviteCode);
+        }
+        return;
+      case "routerSignIn":
+        await this.handlers.routerSignIn();
+        return;
+      case "routerRedeem":
+        await this.handlers.routerRedeem();
+        return;
+      case "routerHandoffPaste":
+        if (typeof msg.raw === "string") {
+          await this.handlers.routerHandoffPaste(msg.raw);
+        }
+        return;
       default:
         return;
     }
@@ -109,6 +134,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
     const payload = {
       ...buildSidebarViewModel({
         workspaceName: workspaceDisplayName(folders),
+        router: this.routerLane.getView(),
         environment: this.environmentLane.getView(),
         course: this.courseLane.getView(),
       }),

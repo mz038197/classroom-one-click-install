@@ -3,6 +3,15 @@ import { describe, it } from "node:test";
 import { buildSidebarViewModel } from "../sidebarViewModel";
 import type { CourseLaneView } from "../courseLaneTypes";
 import type { EnvironmentLaneView } from "../environmentLane";
+import type { RouterLaneView } from "../routerLaneService";
+
+const routerIdle: RouterLaneView = {
+  status: "idle",
+  inviteCode: "",
+  detail: "輸入邀請碼",
+  canRedeem: false,
+  canOpenSignIn: true,
+};
 
 const envReady: EnvironmentLaneView = {
   toolchainReady: true,
@@ -50,12 +59,14 @@ describe("buildSidebarViewModel", () => {
 
     const vm = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course,
     });
 
     assert.equal(vm.title, "凡思課堂安裝");
     assert.equal(vm.workspaceLabel, "工作區：demo");
+    assert.equal(vm.router.statusLabel, "尚未設定");
     assert.equal(vm.environment.tools.length, 3);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");
     assert.equal(vm.course.actions[0]?.kind, "package");
@@ -82,6 +93,7 @@ describe("buildSidebarViewModel", () => {
 
     const vm = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course,
     });
@@ -94,6 +106,7 @@ describe("buildSidebarViewModel", () => {
   it("maps course empty states to a clear message", () => {
     const vm = buildSidebarViewModel({
       workspaceName: "none",
+      router: routerIdle,
       environment: envReady,
       course: { kind: "missing", message: "找不到 classroom-installs.yaml" },
     });
@@ -104,6 +117,7 @@ describe("buildSidebarViewModel", () => {
   it("shows student-facing toolchain badge copy without listing tools", () => {
     const ready = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
     });
@@ -118,6 +132,7 @@ describe("buildSidebarViewModel", () => {
     };
     const incomplete = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: notReady,
       course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
     });
@@ -127,6 +142,7 @@ describe("buildSidebarViewModel", () => {
   it("does not expose Course Catalog filename as a source label", () => {
     const withActions = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course: {
         kind: "ready",
@@ -144,11 +160,13 @@ describe("buildSidebarViewModel", () => {
     });
     const emptyCatalog = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
     });
     const missing = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: envReady,
       course: { kind: "missing", message: "找不到 classroom-installs.yaml" },
     });
@@ -202,6 +220,7 @@ describe("buildSidebarViewModel", () => {
 
     const vm = buildSidebarViewModel({
       workspaceName: "demo",
+      router: routerIdle,
       environment: env,
       course,
     });

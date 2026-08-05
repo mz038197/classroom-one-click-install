@@ -6,14 +6,22 @@ import {
   executeEnvironmentInstallPlan,
 } from "./environmentInstallExecutor";
 import { EnvironmentLaneService } from "./environmentLane";
+import { resolveEditorUserDir } from "./editorUserPath";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
+import {
+  createRouterPortalClient,
+  defaultRouterBaseUrl,
+} from "./routerPortalClient";
+import { RouterLaneService } from "./routerLaneService";
 import {
   INSTALL_ENVIRONMENT_TOOL_COMMAND,
   RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
 } from "./sidebarCommands";
 import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
+
+const API_KEY_SECRET = "classroomApiKey";
 
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
@@ -22,18 +30,41 @@ export function activate(context: vscode.ExtensionContext): void {
     execute: executeEnvironmentInstallPlan,
   });
   const courseLane = new CourseLaneService(() => environmentLane.getReadiness());
+
+  const baseUrl = defaultRouterBaseUrl((key) =>
+    vscode.workspace.getConfiguration().get(key),
+  );
+  const routerLane = new RouterLaneService(createRouterPortalClient(baseUrl), {
+    baseUrl,
+    openExternal: (url) => vscode.env.openExternal(vscode.Uri.parse(url)),
+    resolveUserDir: () =>
+      resolveEditorUserDir({
+        platform: process.platform,
+        uriScheme: vscode.env.uriScheme,
+      }),
+    secretStore: {
+      get: (key) => context.secrets.get(key),
+      store: (key, value) => context.secrets.store(key, value),
+    },
+    apiKeySecretKey: API_KEY_SECRET,
+  });
+
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
 
   const provider = new SidebarWebviewProvider(
     context.extensionUri,
     courseLane,
     environmentLane,
+    routerLane,
     {
       recheck: () => recheckEnvironment(),
       installEnv: (toolId) => installEnvironmentTool(toolId),
       runAction: async (actionId) => {
         await courseLane.runAction(actionId);
       },
+      routerSignIn: () => routerLane.openGoogleSignIn(),
+      routerRedeem: () => routerLane.redeemAndSetup(),
+      routerHandoffPaste: (raw) => routerLane.acceptHandoffInput(raw),
     },
   );
 
@@ -92,6 +123,16 @@ export function activate(context: vscode.ExtensionContext): void {
       provider,
       { webviewOptions: { retainContextWhenHidden: true } },
     ),
+    vscode.window.registerUriHandler({
+      handleUri(uri: vscode.Uri): void {
+        void routerLane.acceptHandoffInput(uri.toString(true)).then(() => {
+          refreshUi();
+          void vscode.commands.executeCommand(
+            "workbench.view.extension.vansClassroomInstall",
+          );
+        });
+      },
+    }),
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {
       void courseLane.runAction(actionId);
     }),
@@ -110,11 +151,13 @@ export function activate(context: vscode.ExtensionContext): void {
       void recheckEnvironment();
     }),
     courseLane.onDidChange(refreshUi),
+    routerLane.onDidChange(refreshUi),
   );
 
   watchCatalog();
   reloadCatalog();
   void recheckEnvironment();
+  void routerLane.restoreFromSecrets().then(refreshUi);
 }
 
 export function deactivate(): void {

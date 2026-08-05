@@ -5,6 +5,7 @@ import type {
   EnvironmentLaneView,
   EnvironmentToolUiStatus,
 } from "./environmentLane";
+import type { RouterLaneView } from "./routerLaneService";
 import type { EnvironmentToolId } from "./toolProbe";
 import { buildSidebarShell } from "./sidebarShell";
 
@@ -33,10 +34,23 @@ export type SidebarCourseActionVm = {
   canRun: boolean;
 };
 
+export type SidebarRouterVm = {
+  status: RouterLaneView["status"];
+  statusLabel: string;
+  inviteCode: string;
+  detail: string;
+  classLabel?: string;
+  canOpenSignIn: boolean;
+  canRedeem: boolean;
+  signInLabel: string;
+  redeemLabel: string;
+};
+
 export type SidebarViewModel = {
   title: string;
   workspaceLabel: string;
   hasCustomCommandInput: false;
+  router: SidebarRouterVm;
   environment: {
     toolchainReady: boolean;
     badge: string;
@@ -51,6 +65,7 @@ export type SidebarViewModel = {
 
 export type BuildSidebarViewModelInput = {
   workspaceName: string;
+  router: RouterLaneView;
   environment: EnvironmentLaneView;
   course: CourseLaneView;
 };
@@ -62,11 +77,23 @@ export function buildSidebarViewModel(
   const shell = buildSidebarShell(input.workspaceName);
   const env = input.environment;
   const badge = env.toolchainReady ? "環境工具皆就緒" : "環境工具未齊";
+  const router = input.router;
 
   return {
     title: shell.title,
     workspaceLabel: shell.workspaceLabel,
     hasCustomCommandInput: false,
+    router: {
+      status: router.status,
+      statusLabel: routerStatusLabel(router.status),
+      inviteCode: router.inviteCode,
+      detail: router.detail,
+      ...(router.classLabel ? { classLabel: router.classLabel } : {}),
+      canOpenSignIn: router.canOpenSignIn,
+      canRedeem: router.canRedeem,
+      signInLabel: "登入 Google",
+      redeemLabel: "兌換並設定",
+    },
     environment: {
       toolchainReady: env.toolchainReady,
       badge,
@@ -86,6 +113,21 @@ export function buildSidebarViewModel(
     },
     course: buildCourseSection(input.course),
   };
+}
+
+function routerStatusLabel(status: RouterLaneView["status"]): string {
+  switch (status) {
+    case "awaiting_sign_in":
+      return "等待登入";
+    case "busy":
+      return "處理中";
+    case "ready":
+      return "已設定";
+    case "error":
+      return "失敗";
+    default:
+      return "尚未設定";
+  }
 }
 
 function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] {

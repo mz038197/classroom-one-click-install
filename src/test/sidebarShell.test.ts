@@ -3,17 +3,18 @@ import { describe, it } from "node:test";
 import { buildSidebarShell } from "../sidebarShell";
 
 describe("buildSidebarShell", () => {
-  it("places Environment Lane above Course Lane with workspace label", () => {
+  it("places Router above Environment above Course with workspace label", () => {
     const shell = buildSidebarShell("my-course-project");
 
     assert.equal(shell.title, "凡思課堂安裝");
     assert.equal(shell.workspaceLabel, "工作區：my-course-project");
     assert.deepEqual(
       shell.lanes.map((lane) => lane.id),
-      ["environment", "course"],
+      ["router", "environment", "course"],
     );
-    assert.equal(shell.lanes[0]?.title, "環境工具");
-    assert.equal(shell.lanes[1]?.title, "本課安裝");
+    assert.equal(shell.lanes[0]?.title, "課堂連線");
+    assert.equal(shell.lanes[1]?.title, "環境工具");
+    assert.equal(shell.lanes[2]?.title, "本課安裝");
   });
 
   it("does not expose a custom command input", () => {
@@ -25,5 +26,6 @@ describe("buildSidebarShell", () => {
     const shell = buildSidebarShell("demo");
     assert.ok(shell.lanes[0]?.placeholder);
     assert.ok(shell.lanes[1]?.placeholder);
+    assert.ok(shell.lanes[2]?.placeholder);
   });
 });

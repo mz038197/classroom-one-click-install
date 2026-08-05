@@ -24,7 +24,8 @@
 
 ### 範圍（MVP）
 
-- VS Code／Cursor 擴充功能側邊欄（Environment 在上、Course 在下）  
+- VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course）  
+- Router Lane：輸入 Invite Code → 瀏覽器 Google → Sign-in Handoff（`vscode://`／貼碼）→ 兌換 Classroom API Key → BYOK Setup（向 router 拉模型清單、寫入**目前 Host**）。見 [ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：讀取工作區根目錄 `classroom-installs.yaml`，執行其中的整段 `command`  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
@@ -38,8 +39,10 @@
 - `uv tool install` 列為必備  
 - Linux 保證  
 - 私有 git 認證、SSH 改寫、`gh auth` 產品內引導  
-- 學生在擴充功能內輸入自訂命令  
+- 學生在擴充功能內輸入自訂 **shell 命令**（邀請碼輸入除外）  
 - 遠端／多份 Course Catalog  
+- redeem rate limit 等 router 加固（另案）  
+- 以 Portal 網頁兌換／下載 install 腳本為課堂主路徑（改為備援）  
 
 ### 尚未定案（實作時可先採合理預設，或另開決策）
 
@@ -61,7 +64,8 @@
 | Action Kind | `skill`／`package`／`mcp`（純顯示 tag） |
 | Environment Tool | uv／git／Node.js |
 | Course Catalog | `classroom-installs.yaml` |
-| Environment Lane／Course Lane | 側邊欄兩大區（可各自收合） |
+| Router Lane／Environment Lane／Course Lane | 側邊欄三區（可各自收合；Router 最上） |
+| Invite Code／Classroom API Key／Sign-in Handoff／BYOK Setup | 見 [`CONTEXT.md`](../CONTEXT.md) |
 | Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；不是 Course Lane 總開關 |
 
 ---

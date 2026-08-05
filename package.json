@@ -17,10 +17,21 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:vansClassroomInstall.sidebar"
+    "onView:vansClassroomInstall.sidebar",
+    "onUri"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "凡思課堂安裝",
+      "properties": {
+        "vansClassroomInstall.routerBaseUrl": {
+          "type": "string",
+          "default": "https://ai.vanscoding.com",
+          "description": "Vans Coding Router 公開網址（進階；一般課堂不必改）"
+        }
+      }
+    },
     "commands": [
       {
         "command": "vansClassroomInstall.runInstallAction",

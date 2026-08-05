@@ -1,4 +1,4 @@
-export type SidebarLaneId = "environment" | "course";
+export type SidebarLaneId = "router" | "environment" | "course";
 
 export type SidebarLane = {
   id: SidebarLaneId;
@@ -9,17 +9,22 @@ export type SidebarLane = {
 export type SidebarShell = {
   title: string;
   workspaceLabel: string;
-  lanes: readonly [SidebarLane, SidebarLane];
-  /** 信任邊界：UI 永不提供學生自訂命令輸入。 */
+  lanes: readonly [SidebarLane, SidebarLane, SidebarLane];
+  /** 信任邊界：UI 永不提供學生自訂 shell 命令輸入（邀請碼不算）。 */
   hasCustomCommandInput: false;
 };
 
-/** 變體 A 側邊欄殼：Environment Lane 在上、Course Lane 在下。 */
+/** 側邊欄殼：Router Lane → Environment Lane → Course Lane。 */
 export function buildSidebarShell(workspaceName: string): SidebarShell {
   return {
     title: "凡思課堂安裝",
     workspaceLabel: `工作區：${workspaceName}`,
     lanes: [
+      {
+        id: "router",
+        title: "課堂連線",
+        placeholder: "邀請碼、Google 登入、BYOK 設定",
+      },
       {
         id: "environment",
         title: "環境工具",

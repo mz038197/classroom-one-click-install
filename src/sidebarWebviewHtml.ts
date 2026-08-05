@@ -179,12 +179,12 @@ export function getSidebarWebviewHtml(
       border: 1px solid transparent;
     }
     .status.ready, .status.succeeded { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
-    .status.missing, .status.failed { color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); }
-    .status.needs-reopen-terminal, .status.unverified, .status.warn {
+    .status.missing, .status.failed, .status.error { color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); }
+    .status.needs-reopen-terminal, .status.unverified, .status.warn, .status.awaiting_sign_in {
       color: var(--warn);
       border-color: color-mix(in srgb, var(--warn) 35%, transparent);
     }
-    .status.installing, .status.running {
+    .status.installing, .status.running, .status.busy {
       color: var(--vans-accent);
       border-color: color-mix(in srgb, var(--vans-accent) 40%, transparent);
     }
@@ -215,6 +215,18 @@ export function getSidebarWebviewHtml(
     button.secondary:hover:not(:disabled) {
       background: var(--vscode-toolbar-hoverBackground, rgba(127,127,127,.12));
     }
+    .field { margin: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; opacity: 0.85; }
+    .field input, .field textarea {
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--vscode-input-border, rgba(127,127,127,.45));
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+    }
+    .field textarea { min-height: 52px; resize: vertical; }
   </style>
 </head>
 <body>
