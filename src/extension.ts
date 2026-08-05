@@ -12,6 +12,10 @@ import {
   finalizePendingHostByok,
   type PendingHostByok,
 } from "./pendingHostByok";
+import {
+  buildRelaunchAfterQuitPlan,
+  scheduleRelaunchAfterQuit,
+} from "./relaunchHost";
 import { createDefaultProbeRunner } from "./probeRunner";
 import type { EnvironmentToolId } from "./toolProbe";
 import {
@@ -32,9 +36,11 @@ import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
 const API_KEY_SECRET = "classroomApiKey";
 
 const BYOK_RESTART_MESSAGE =
-  "BYOK 已寫入。請完全結束 VS Code（關掉所有視窗，勿只按重載），再重新開啟後選 VCRouter 模型。";
+  "BYOK 已寫入。請重新啟動 VS Code（勿只按重載視窗），再開啟後選 VCRouter 模型。";
 const CLEAR_RESTART_MESSAGE =
-  "已清除課堂連線。請完全結束 VS Code 後再開啟，變更才會穩定生效。";
+  "已清除課堂連線。請重新啟動 VS Code，變更才會穩定生效。";
+const RESTART_ACTION = "重新啟動";
+const LATER_ACTION = "稍後";
 
 export function activate(context: vscode.ExtensionContext): void {
   const environmentLane = new EnvironmentLaneService(createDefaultProbeRunner(), {
@@ -79,7 +85,24 @@ export function activate(context: vscode.ExtensionContext): void {
   };
 
   const offerFullRestart = async (message: string): Promise<void> => {
-    await vscode.window.showInformationMessage(message, "知道了");
+    const choice = await vscode.window.showInformationMessage(
+      message,
+      RESTART_ACTION,
+      LATER_ACTION,
+    );
+    if (choice !== RESTART_ACTION) {
+      return;
+    }
+    const openPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    scheduleRelaunchAfterQuit(
+      buildRelaunchAfterQuitPlan({
+        platform: process.platform,
+        execPath: process.execPath,
+        openPath,
+        comSpec: process.env.ComSpec,
+      }),
+    );
+    await vscode.commands.executeCommand("workbench.action.quit");
   };
 
   const afterRouterAction = async (
@@ -124,8 +147,15 @@ export function activate(context: vscode.ExtensionContext): void {
         if (confirm !== "清除") {
           return;
         }
-        await context.globalState.update(PENDING_HOST_BYOK_STATE_KEY, undefined);
         const result = await routerLane.clearClassroomConnection();
+        // Only drop pending Host rewrite after a successful clear; failures keep
+        // the marker so activate can still finalize BYOK.
+        if (result.needsReload) {
+          await context.globalState.update(
+            PENDING_HOST_BYOK_STATE_KEY,
+            undefined,
+          );
+        }
         await afterRouterAction(result, CLEAR_RESTART_MESSAGE, false);
       },
       routerHandoffPaste: async (raw) => {
@@ -192,12 +222,15 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.window.registerUriHandler({
       handleUri(uri: vscode.Uri): void {
-        void routerLane.acceptHandoffInput(uri.toString(true)).then((result) => {
-          void afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
-          void vscode.commands.executeCommand(
+        void (async () => {
+          const result = await routerLane.acceptHandoffInput(
+            uri.toString(true),
+          );
+          await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
+          await vscode.commands.executeCommand(
             "workbench.view.extension.vansClassroomInstall",
           );
-        });
+        })();
       },
     }),
     vscode.commands.registerCommand(RUN_INSTALL_ACTION_COMMAND, (actionId: string) => {

@@ -46,7 +46,10 @@ export async function clearClassroomConnection(options: {
     }
   }
 
-  await deleteHost({ stateDbPath: options.stateDbPath });
+  await deleteHost({
+    stateDbPath: options.stateDbPath,
+    secretKey: CLASSROOM_CHAT_LM_SECRET_KEY,
+  });
   const apiKeySecretKey = options.apiKeySecretKey ?? "classroomApiKey";
   await options.deleteSecret(apiKeySecretKey);
   await options.deleteSecret(CLASSROOM_CHAT_LM_SECRET_KEY);

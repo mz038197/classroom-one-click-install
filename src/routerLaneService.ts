@@ -211,7 +211,7 @@ export class RouterLaneService {
         undefined;
       this.expiresAt = redeemed.session.expires_at;
       this.status = "ready";
-      this.detail = `已完成 BYOK 設定（${target}）。請完全結束 VS Code 後再開啟，然後選 VCRouter 模型（勿只重載視窗）。`;
+      this.detail = `已完成 BYOK 設定（${target}）。請按右下角「重新啟動」，然後選 VCRouter 模型（勿只重載視窗）。`;
       this.emit();
       return { needsReload: true };
     } catch (err) {
@@ -236,8 +236,9 @@ export class RouterLaneService {
       await clear({
         userDir,
         stateDbPath: hostStateDbPath(userDir),
-        deleteSecret: (key) =>
-          Promise.resolve(this.options.secretStore.delete(key)).then(() => undefined),
+        deleteSecret: async (key) => {
+          await this.options.secretStore.delete(key);
+        },
         apiKeySecretKey: this.options.apiKeySecretKey,
       });
       this.inviteCode = "";
@@ -247,7 +248,7 @@ export class RouterLaneService {
       this.lastApiKeyPrefix = undefined;
       this.status = "idle";
       this.detail =
-        "已清除課堂連線。請完全結束 VS Code 後再開啟；若要再連線請重新兌換。";
+        "已清除課堂連線。請按右下角「重新啟動」；若要再連線請重新兌換。";
       this.emit();
       return { needsReload: true };
     } catch (err) {

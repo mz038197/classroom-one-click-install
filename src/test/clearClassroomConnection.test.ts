@@ -21,7 +21,9 @@ describe("clearClassroomConnection", () => {
       ]),
     );
     const deletedSecrets: string[] = [];
-    let hostDeleted = false;
+    let hostDeleteArgs:
+      | { stateDbPath: string; secretKey?: string }
+      | undefined;
 
     await clearClassroomConnection({
       userDir,
@@ -29,8 +31,8 @@ describe("clearClassroomConnection", () => {
       deleteSecret: async (key) => {
         deletedSecrets.push(key);
       },
-      deleteHostSecret: async () => {
-        hostDeleted = true;
+      deleteHostSecret: async (args) => {
+        hostDeleteArgs = args;
       },
       readFile: async (p) => {
         const v = files.get(p);
@@ -49,10 +51,33 @@ describe("clearClassroomConnection", () => {
     const written = JSON.parse(files.get(modelsPath) ?? "null");
     assert.equal(written.length, 1);
     assert.equal(written[0].name, "OpenRouter");
-    assert.equal(hostDeleted, true);
+    assert.deepEqual(hostDeleteArgs, {
+      stateDbPath: "/tmp/user/globalStorage/state.vscdb",
+      secretKey: CLASSROOM_CHAT_LM_SECRET_KEY,
+    });
     assert.deepEqual(deletedSecrets.sort(), [
       CLASSROOM_CHAT_LM_SECRET_KEY,
       "classroomApiKey",
     ].sort());
+  });
+
+  it("propagates deleteSecret failures", async () => {
+    await assert.rejects(
+      () =>
+        clearClassroomConnection({
+          userDir: "/tmp/user",
+          stateDbPath: "/tmp/user/globalStorage/state.vscdb",
+          deleteSecret: async () => {
+            throw new Error("secret delete failed");
+          },
+          deleteHostSecret: async () => undefined,
+          readFile: async () => {
+            const err = new Error("missing") as NodeJS.ErrnoException;
+            err.code = "ENOENT";
+            throw err;
+          },
+        }),
+      /secret delete failed/,
+    );
   });
 });
