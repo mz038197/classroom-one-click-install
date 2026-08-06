@@ -16,7 +16,10 @@ export function isChatLmSecretInputRef(value: string | undefined): boolean {
 }
 
 export function isPlainClassroomApiKey(value: string | undefined): boolean {
-  return typeof value === "string" && value.startsWith("vcr_sk_");
+  return (
+    typeof value === "string" &&
+    (value.startsWith("vcr_sk_") || value.startsWith("pegasi_sk_"))
+  );
 }
 
 export const VCROUTER_PROVIDER_MATCH = {

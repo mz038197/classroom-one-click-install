@@ -36,6 +36,7 @@ describe("RouterLaneService", () => {
     let wroteKey = "";
     let hostPlaintext = "";
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [
         { name: "VCRouter", vendor: "customendpoint", apiKey: "", models: [] },
       ],
@@ -87,6 +88,7 @@ describe("RouterLaneService", () => {
   it("blocks Cursor host without redeeming", async () => {
     let redeemed = false;
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         redeemed = true;
@@ -104,6 +106,7 @@ describe("RouterLaneService", () => {
 
   it("restores ready detail without exposing Classroom API Key prefix", async () => {
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("unused");
@@ -120,6 +123,7 @@ describe("RouterLaneService", () => {
 
   it("prompts for 連線登入 when redeeming without handoff", async () => {
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("should not redeem");
@@ -137,6 +141,7 @@ describe("RouterLaneService", () => {
   it("does not allow 連線登入 without Invite Code", async () => {
     let opened = false;
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("unused");
@@ -159,6 +164,7 @@ describe("RouterLaneService", () => {
 
   it("enables 連線登入 only after Invite Code and hides paste UI until awaiting", async () => {
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("unused");
@@ -181,6 +187,7 @@ describe("RouterLaneService", () => {
   it("clears pending handoff when 重新連線登入", async () => {
     let openCount = 0;
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("should not redeem without fresh handoff path in this test");
@@ -211,6 +218,7 @@ describe("RouterLaneService", () => {
   it("clears classroom connection and resets to idle", async () => {
     let cleared = false;
     const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
       fetchChatLanguageModelsTemplate: async () => [],
       redeemWithHandoff: async () => {
         throw new Error("unused");

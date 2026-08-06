@@ -313,8 +313,21 @@
       ),
     );
 
-    const courseHead = laneHeader("course", "本課安裝", null);
+    const retryRemote =
+      vm.course.canRetryRemote
+        ? el("button", {
+            className: "secondary",
+            type: "button",
+            text:
+              vm.course.catalogSource === "session" ? "重新載入" : "再試遠端",
+            onclick: () => vscode.postMessage({ type: "retryRemoteCatalog" }),
+          })
+        : null;
+    const courseHead = laneHeader("course", "本課安裝", retryRemote);
     const courseBody = el("div", { className: "lane-body" });
+    if (vm.course.tip) {
+      courseBody.appendChild(el("p", { className: "tip", text: vm.course.tip }));
+    }
     if (vm.course.emptyMessage) {
       courseBody.appendChild(
         el("p", { className: "empty", text: vm.course.emptyMessage }),

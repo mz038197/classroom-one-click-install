@@ -16,6 +16,7 @@ export type RouterPortalClient = {
     handoffToken: string,
     inviteCode: string,
   ) => Promise<RedeemResult>;
+  fetchCourseCatalogYaml: (apiKey: string) => Promise<string>;
 };
 
 export function createRouterPortalClient(baseUrl: string): RouterPortalClient {
@@ -56,6 +57,29 @@ export function createRouterPortalClient(baseUrl: string): RouterPortalClient {
         throw new Error(detail);
       }
       return (await res.json()) as RedeemResult;
+    },
+
+    async fetchCourseCatalogYaml(apiKey) {
+      const res = await fetch(`${root}/extension/course-catalog`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try {
+          const body = (await res.json()) as { detail?: string };
+          if (body.detail) {
+            detail = String(body.detail);
+          }
+        } catch {
+          // keep status
+        }
+        throw new Error(detail);
+      }
+      const data = (await res.json()) as { course_catalog_yaml?: unknown };
+      if (typeof data.course_catalog_yaml !== "string") {
+        throw new Error("Course Catalog 格式錯誤");
+      }
+      return data.course_catalog_yaml;
     },
   };
 }

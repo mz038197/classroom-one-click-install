@@ -6,6 +6,7 @@ import {
   isUnsupportedByokHost,
   toChatLmSecretInputRef,
 } from "./hostLmSecret";
+import { isPlainClassroomApiKey } from "./hostLmSecret";
 import { ensureHostChatLmSecret, hostStateDbPath } from "./hostStateDb";
 import type { RouterPortalClient } from "./routerPortalClient";
 import { parseHandoffToken } from "./routerHandoffUri";
@@ -281,7 +282,7 @@ export class RouterLaneService {
     }
     const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
     const key = await this.options.secretStore.get(secretKey);
-    if (key?.startsWith("vcr_sk_")) {
+    if (isPlainClassroomApiKey(key)) {
       if (this.status === "idle") {
         this.status = "ready";
         this.detail = "Classroom API Key 已設定。";

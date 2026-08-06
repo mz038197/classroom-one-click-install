@@ -62,6 +62,10 @@ export type SidebarViewModel = {
   };
   course: {
     emptyMessage?: string;
+    tip?: string;
+    canRetryRemote?: boolean;
+    /** session = 遠端成功；workspace = 本機／fallback */
+    catalogSource?: "session" | "workspace";
     actions: SidebarCourseActionVm[];
   };
 };
@@ -144,6 +148,21 @@ function routerSignInLabel(status: RouterLaneView["status"]): string {
 }
 
 function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] {
+  const tipFields = (
+    view: {
+      tip?: string;
+      canRetryRemote?: boolean;
+      source?: "session" | "workspace";
+    },
+  ): Pick<
+    SidebarViewModel["course"],
+    "tip" | "canRetryRemote" | "catalogSource"
+  > => ({
+    ...(view.tip ? { tip: view.tip } : {}),
+    ...(view.canRetryRemote ? { canRetryRemote: true } : {}),
+    ...(view.source ? { catalogSource: view.source } : {}),
+  });
+
   if (course.kind === "no-workspace") {
     return {
       emptyMessage: "請先開啟工作區資料夾",
@@ -153,16 +172,19 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
   if (course.kind === "missing" || course.kind === "invalid") {
     return {
       emptyMessage: course.message,
+      ...tipFields(course),
       actions: [],
     };
   }
   if (course.actions.length === 0) {
     return {
       emptyMessage: "Catalog 目前沒有可執行的本課動作",
+      ...tipFields(course),
       actions: [],
     };
   }
   return {
+    ...tipFields(course),
     actions: course.actions.map((action) => {
       const busy = action.run.status === "running";
       const disabled = Boolean(action.disabledReason);

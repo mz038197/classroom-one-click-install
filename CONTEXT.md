@@ -5,20 +5,24 @@
 ## Language
 
 **Install Action**:
-老師策展、學生可點的一筆安裝動作；含顯示名稱、必填的 Action Kind，以及背後要執行的指令意圖（例如 `uv add` 或 `uvx`），不必然等於 PyPI 套件短名。
-_Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（暗示只是短名）
+老師策展、學生可點的一筆安裝動作；含顯示名稱、必填的 Action Kind，以及背後要執行的指令意圖（例如 `uv add` 或 `uvx`），不必然等於 PyPI 套件短名。本期不另做「下載檔案進專案」的專用動作。
+_Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（暗示只是短名）, File Asset 專用 kind
 
 **Action Kind**:
-標在單一 Install Action 上的封閉種類；YAML 欄位 `kind`，值為 `skill`／`package`／`mcp`，學生分別看到 tag「Skill」「套件」「MCP」。純顯示標示：不分區、不收合、不改變啟用／執行／依賴行為。缺漏或非法值則整份 Course Catalog 載入失敗。
-_Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單獨當領域詞或第四種 kind）, 開放任意字串 kind, 用 kind 驅動安裝邏輯
+標在單一 Install Action 上的封閉種類；欄位 `kind`，值為 `skill`／`package`／`mcp`（學生分別看到 tag「Skill」「套件」「MCP」）。純顯示標示：不分區、不收合、不改變啟用／執行／依賴行為。缺漏或非法值則整份 Course Catalog 載入失敗。不另增「檔案資產」kind——進專案的效果由 catalog 內既有動作（含其 `command`）完成。
+_Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單獨當領域詞或第四種 kind）, 開放任意字串 kind, 用 kind 驅動安裝邏輯, `asset`／`files`／`material` 當新 kind
 
 **Environment Tool**:
 機器層級、固定清單的工具鏈成員（目前：uv、git、Node.js）；用來讓本課安裝動作跑得起來。
 _Avoid_: 全域模組, 系統套件（太寬）
 
 **Course Catalog**:
-放在學生工作區根目錄的策展清單檔 `classroom-installs.yaml`，以頂層 `actions` 列出本課的 Install Action。
-_Avoid_: 巢狀 `groups`（已撤回）, 遙控清單（MVP 不做）, 應用內建唯一清單, 多份清單（MVP 不做）
+某一課堂的策展安裝清單，以頂層 `actions` 列出本課的 Install Action。有課堂連線時，權威來源是學生所連 **Router**（`vans_coding_router` 或 `pegasi_router`，由 `routerBaseUrl` 決定）上、該 Classroom API Key 所屬 Class Session 的 YAML，經獨立 GET 拉取（與兌換解耦）。拉取時機：兌換成功後、擴充啟動且本機已有 key 時自動拉、以及手動重新載入／再試遠端；課堂結束後仍可拉最後一版。成功結果只留在擴充記憶體，不寫回工作區 `classroom-installs.yaml`。擴充「手上沒有可用 YAML」時 fallback 讀工作區根目錄該檔。遠端合法但 `actions` 為空仍算「有 YAML」，不因此 fallback。清單 UI 在 Course Lane；使用 fallback 時顯示短提示並提供再試遠端。本期不做檔案資產一鍵進專案。
+_Avoid_: 巢狀 `groups`（已撤回）, 應用內建唯一清單, 多份並行清單（同一學生同時多份有效 catalog）, 僅工作區根目錄 YAML 當唯一真相（已撤回）, 輪詢自動更新, 本機覆蓋遠端, 把遠端 catalog 寫進學生專案檔, 一級 File Asset／新 asset kind（本期不做）, 把清單 UI 併進 Router Lane, 靜默 fallback, 把空的遠端 `actions` 當成失敗, 只做 Vans Router 不做 Pegasi
+
+**Router**:
+學生透過設定 `routerBaseUrl` 連上的課堂後端；本期支援的兩個對等實作是 `vans_coding_router` 與 `pegasi_router`。Course Catalog 的 Portal 編輯、Session 儲存與 extension GET 契約必須在兩者保持一致，擴充不為 Pegasi／Vans 各寫一套 catalog 邏輯。
+_Avoid_: 只實作單一 router 部署, 兩套不相容的 catalog API／YAML 形狀
 
 **Router Lane**:
 側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。
@@ -28,7 +32,8 @@ _Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入
 側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。
 
 **Course Lane**:
-側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。
+側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。
+_Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作
 
 **Toolchain Ready**:
 uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。

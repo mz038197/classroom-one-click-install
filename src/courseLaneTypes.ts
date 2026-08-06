@@ -10,10 +10,23 @@ export type CourseLaneActionView = InstallAction & {
 
 export type CourseLaneView =
   | { kind: "no-workspace" }
-  | { kind: "missing"; message: string }
-  | { kind: "invalid"; message: string }
+  | {
+      kind: "missing";
+      message: string;
+      tip?: string;
+      canRetryRemote?: boolean;
+    }
+  | {
+      kind: "invalid";
+      message: string;
+      tip?: string;
+      canRetryRemote?: boolean;
+    }
   | {
       kind: "ready";
       workspaceRoot: string;
       actions: CourseLaneActionView[];
+      tip?: string;
+      canRetryRemote?: boolean;
+      source?: "session" | "workspace";
     };

@@ -5,10 +5,8 @@ import {
   type ToolReadiness,
 } from "./actionDependencyGate";
 import { confirmThenRun } from "./confirmThenRun";
-import {
-  parseCourseCatalog,
-  type InstallAction,
-} from "./courseCatalog";
+import { type InstallAction } from "./courseCatalog";
+import { loadCourseCatalog } from "./courseCatalogLoad";
 import {
   CATALOG_FILENAME,
   type CourseLaneView,
@@ -23,6 +21,11 @@ export {
 
 export type ReadinessProvider = () => ToolReadiness;
 
+export type CourseLaneRemoteDeps = {
+  getApiKey: () => Promise<string | undefined>;
+  fetchRemoteYaml: (apiKey: string) => Promise<string>;
+};
+
 const ALL_READY: ToolReadiness = { uv: true, git: true, node: true };
 
 export class CourseLaneService {
@@ -30,10 +33,16 @@ export class CourseLaneService {
   private actions: InstallAction[] = [];
   private workspaceRoot: string | undefined;
   private loadError: { kind: "missing" | "invalid"; message: string } | undefined;
+  private tip: string | undefined;
+  private canRetryRemote = false;
+  private source: "session" | "workspace" | undefined;
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
-  constructor(private readonly readiness: ReadinessProvider = () => ALL_READY) {}
+  constructor(
+    private readonly readiness: ReadinessProvider = () => ALL_READY,
+    private readonly remote?: CourseLaneRemoteDeps,
+  ) {}
 
   getView(): CourseLaneView {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -41,10 +50,20 @@ export class CourseLaneService {
       return { kind: "no-workspace" };
     }
     if (this.loadError?.kind === "missing") {
-      return { kind: "missing", message: this.loadError.message };
+      return {
+        kind: "missing",
+        message: this.loadError.message,
+        ...(this.tip ? { tip: this.tip } : {}),
+        ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
+      };
     }
     if (this.loadError?.kind === "invalid") {
-      return { kind: "invalid", message: this.loadError.message };
+      return {
+        kind: "invalid",
+        message: this.loadError.message,
+        ...(this.tip ? { tip: this.tip } : {}),
+        ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
+      };
     }
     const tools = this.readiness();
     return {
@@ -58,6 +77,9 @@ export class CourseLaneService {
           ...(disabledReason ? { disabledReason } : {}),
         };
       }),
+      ...(this.tip ? { tip: this.tip } : {}),
+      ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
+      ...(this.source ? { source: this.source } : {}),
     };
   }
 
@@ -67,35 +89,48 @@ export class CourseLaneService {
       this.actions = [];
       this.workspaceRoot = undefined;
       this.loadError = undefined;
+      this.tip = undefined;
+      this.canRetryRemote = false;
+      this.source = undefined;
       this.onDidChangeEmitter.fire();
       return;
     }
 
     this.workspaceRoot = folder.uri.fsPath;
-    const uri = vscode.Uri.joinPath(folder.uri, CATALOG_FILENAME);
-    let bytes: Uint8Array;
-    try {
-      bytes = await vscode.workspace.fs.readFile(uri);
-    } catch {
+    const apiKey = this.remote ? await this.remote.getApiKey() : undefined;
+    const result = await loadCourseCatalog({
+      apiKey,
+      fetchRemoteYaml: this.remote
+        ? (key) => this.remote!.fetchRemoteYaml(key)
+        : async () => {
+            throw new Error("no remote");
+          },
+      readWorkspaceYaml: async () => {
+        const uri = vscode.Uri.joinPath(folder.uri, CATALOG_FILENAME);
+        try {
+          const bytes = await vscode.workspace.fs.readFile(uri);
+          return Buffer.from(bytes).toString("utf8");
+        } catch {
+          return undefined;
+        }
+      },
+    });
+
+    if (!result.ok) {
       this.actions = [];
-      this.loadError = {
-        kind: "missing",
-        message: `找不到 ${CATALOG_FILENAME}`,
-      };
+      this.loadError = { kind: result.kind, message: result.message };
+      this.tip = result.tip;
+      this.canRetryRemote = result.canRetryRemote;
+      this.source = undefined;
       this.onDidChangeEmitter.fire();
       return;
     }
 
-    const parsed = parseCourseCatalog(Buffer.from(bytes).toString("utf8"));
-    if (!parsed.ok) {
-      this.actions = [];
-      this.loadError = { kind: "invalid", message: parsed.error };
-      this.onDidChangeEmitter.fire();
-      return;
-    }
-
-    this.actions = parsed.actions;
+    this.actions = result.actions;
     this.loadError = undefined;
+    this.tip = result.tip;
+    this.canRetryRemote = result.canRetryRemote;
+    this.source = result.source;
     this.onDidChangeEmitter.fire();
   }
 

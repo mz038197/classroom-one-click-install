@@ -13,7 +13,7 @@
 上課時老師常投影 `uv add …`、`uvx …` 等指令，學生必須複製貼上到編輯器終端機。本產品讓學生在側邊欄：
 
 1. **Environment Lane**：檢查／安裝固定環境工具（uv、git、Node.js）  
-2. **Course Lane**：一鍵執行老師寫在工作區 `classroom-installs.yaml` 裡的本課安裝動作  
+2. **Course Lane**：一鍵執行本課 Install Action（清單優先來自所連 Router 的 Session Catalog；失敗時 fallback 工作區 `classroom-installs.yaml`）  
 
 指令在**整合終端機**執行；側邊欄同步進行中／成功／失敗。  
 目標使用者：課堂學生（操作）、老師（維護 catalog；VS Code 學生走市集，必要時發 VSIX 備援）。
@@ -27,7 +27,7 @@
 - VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course）  
 - Router Lane：須先輸入 Invite Code 才能「連線登入」→ 瀏覽器 Google → Sign-in Handoff（深連結成功則自動兌換；失敗才露出貼碼與「貼上並完成連線」）→ Classroom API Key → BYOK Setup（向 router 拉模型清單、寫入**目前 Host**）。見 [ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
-- 本課動作：讀取工作區根目錄 `classroom-installs.yaml`，執行其中的整段 `command`  
+- 本課動作：載入 Session／本機 Course Catalog，執行其中的整段 `command`  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
 - 發佈：VS Code 以 **Visual Studio Marketplace** 為主（`vans-coding.vans-classroom-install`）；**VSIX 側載**為備援（Cursor／離線／急救）。不上架 Open VSX。見 [ADR 0002](./adr/0002-vs-marketplace-publish.md)。
 
@@ -40,7 +40,7 @@
 - Linux 保證  
 - 私有 git 認證、SSH 改寫、`gh auth` 產品內引導  
 - 學生在擴充功能內輸入自訂 **shell 命令**（邀請碼輸入除外）  
-- 遠端／多份 Course Catalog  
+- 多份並行 Course Catalog；File Asset／新 Action Kind 一鍵下載進專案  
 - redeem rate limit 等 router 加固（另案）  
 - 以 Portal 網頁兌換／下載 install 腳本為課堂主路徑（改為備援）  
 
@@ -63,7 +63,7 @@
 | Install Action | 老師策展、學生可點的一筆安裝動作（顯示名＋kind＋命令） |
 | Action Kind | `skill`／`package`／`mcp`（純顯示 tag） |
 | Environment Tool | uv／git／Node.js |
-| Course Catalog | `classroom-installs.yaml` |
+| Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml` |
 | Router Lane／Environment Lane／Course Lane | 側邊欄三區（可各自收合；Router 最上） |
 | Invite Code／Classroom API Key／Sign-in Handoff／BYOK Setup | 見 [`CONTEXT.md`](../CONTEXT.md) |
 | Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；不是 Course Lane 總開關 |
@@ -72,11 +72,13 @@
 
 ## 4. Course Catalog
 
-### 檔案
+權威來源為學生所連 **Router**（`vans_coding_router`／`pegasi_router`）上、Classroom API Key 所屬 Class Session 的 YAML（`GET /extension/course-catalog`，Bearer key）。老師於 Portal 以 YAML 文字區編輯（校验失敗拒存）。擴充在兌換成功、啟動且已有 key、以及「再試遠端」時拉取；成功結果只留記憶體。手上沒有可用遠端 YAML 時 fallback 工作區根目錄檔；使用 fallback 時提示並可再試。遠端合法空清單不算失敗。見 [ADR 0006](./adr/0006-session-course-catalog.md)。
+
+### 檔案（fallback）
 
 - 路徑：工作區**根目錄** `classroom-installs.yaml`  
-- 格式：YAML  
-- MVP：單一檔；不支援自訂路徑、多份清單  
+- 格式：YAML（與 Session Catalog 同形）  
+- 不支援自訂路徑、多份並行清單  
 
 ### Schema
 
@@ -247,7 +249,7 @@ actions:
 
 實作完成 MVP 時，下列皆應可手動或自動化驗證：
 
-1. **Catalog 載入**：工作區根目錄放置合法 `classroom-installs.yaml`（每筆含合法 `kind`）後，側邊欄 Course Lane 顯示對應 `title`、kind tag（與選填 `description`）。  
+1. **Catalog 載入**：課堂連線後 Course Lane 顯示 Session Catalog 的 `title`、kind tag（與選填 `description`）；無可用遠端 YAML 時 fallback 工作區 `classroom-installs.yaml` 並提示可再試遠端。  
 2. **確認後執行**：點一本課動作會先顯示完整 `command`；取消不執行；確認後在工作區根目錄於整合終端機執行該命令。  
 3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。  
 4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。  

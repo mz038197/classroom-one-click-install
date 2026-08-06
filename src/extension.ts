@@ -48,11 +48,15 @@ export function activate(context: vscode.ExtensionContext): void {
     confirm: confirmEnvironmentInstall,
     execute: executeEnvironmentInstallPlan,
   });
-  const courseLane = new CourseLaneService(() => environmentLane.getReadiness());
-
   const baseUrl = defaultRouterBaseUrl((key) =>
     vscode.workspace.getConfiguration().get(key),
   );
+  const portalClient = createRouterPortalClient(baseUrl);
+
+  const courseLane = new CourseLaneService(() => environmentLane.getReadiness(), {
+    getApiKey: async () => context.secrets.get(API_KEY_SECRET),
+    fetchRemoteYaml: (apiKey) => portalClient.fetchCourseCatalogYaml(apiKey),
+  });
 
   const resolveUserDir = (): string =>
     resolveEditorUserDir({
@@ -60,7 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
       uriScheme: vscode.env.uriScheme,
     });
 
-  const routerLane = new RouterLaneService(createRouterPortalClient(baseUrl), {
+  const routerLane = new RouterLaneService(portalClient, {
     baseUrl,
     openExternal: (url) => vscode.env.openExternal(vscode.Uri.parse(url)),
     resolveUserDir,
@@ -141,6 +145,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       routerRedeem: async () => {
         const result = await routerLane.redeemAndSetup();
+        reloadCatalog();
         await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
       },
       routerClear: async () => {
@@ -161,11 +166,16 @@ export function activate(context: vscode.ExtensionContext): void {
             undefined,
           );
         }
+        reloadCatalog();
         await afterRouterAction(result, CLEAR_RESTART_MESSAGE, false);
       },
       routerHandoffPaste: async (raw) => {
         const result = await routerLane.acceptHandoffInput(raw);
+        reloadCatalog();
         await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
+      },
+      retryRemoteCatalog: async () => {
+        reloadCatalog();
       },
     },
   );
@@ -231,6 +241,7 @@ export function activate(context: vscode.ExtensionContext): void {
           const result = await routerLane.acceptHandoffInput(
             uri.toString(true),
           );
+          reloadCatalog();
           await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
           await vscode.commands.executeCommand(
             "workbench.view.extension.vansClassroomInstall",
@@ -260,9 +271,11 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   watchCatalog();
-  reloadCatalog();
   void recheckEnvironment();
-  void routerLane.restoreFromSecrets().then(refreshUi);
+  void routerLane.restoreFromSecrets().then(() => {
+    reloadCatalog();
+    refreshUi();
+  });
 
   void (async () => {
     const pending = context.globalState.get<PendingHostByok>(
