@@ -31,8 +31,8 @@ _Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入
 側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。
 
 **Toolchain Ready**:
-uv、git、Node.js 三者皆透過終端機偵測為可用（找得到指令且版本命令成功）的總覽狀態；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
-_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目
+uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
+_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 僅編輯器行程啟動當下 PATH
 
 **Marketplace Install**:
 VS Code 學生從 Visual Studio Marketplace 安裝本擴充功能的主路徑。

@@ -15,6 +15,7 @@ function createTerminalAtWorkspaceRoot(cwd: string): vscode.Terminal {
 
 export async function waitForShellIntegration(
   terminal: vscode.Terminal,
+  waitMs: number = SHELL_INTEGRATION_WAIT_MS,
 ): Promise<vscode.TerminalShellIntegration | undefined> {
   if (terminal.shellIntegration) {
     return terminal.shellIntegration;
@@ -23,7 +24,7 @@ export async function waitForShellIntegration(
     const timer = setTimeout(() => {
       sub.dispose();
       resolve(terminal.shellIntegration);
-    }, SHELL_INTEGRATION_WAIT_MS);
+    }, waitMs);
     const sub = vscode.window.onDidChangeTerminalShellIntegration((event) => {
       if (event.terminal !== terminal) {
         return;

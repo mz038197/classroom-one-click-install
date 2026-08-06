@@ -2,19 +2,56 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import type { ProbeRunner } from "./environmentLane";
+import {
+  buildProbeExecEnv,
+  buildProbeHostCommand,
+} from "./probePathEnv";
 import { waitForShellIntegration } from "./terminalRunner";
 import type { EnvironmentToolId, ProbeCommandResult } from "./toolProbe";
 
 const execAsync = promisify(exec);
 const ENV_CHECK_TERMINAL = "Classroom env check";
 const COMMAND_TIMEOUT_MS = 15_000;
+/** Probe waits less than install path — Cursor often never enables SI. */
+const PROBE_SHELL_INTEGRATION_WAIT_MS = 2_000;
 
-async function runHostShell(command: string): Promise<ProbeCommandResult> {
+async function readWindowsMachineUserPath(): Promise<string | undefined> {
   try {
-    const { stdout } = await execAsync(command, {
+    const { stdout } = await execAsync(
+      "powershell.exe -NoProfile -Command \"[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')\"",
+      {
+        windowsHide: true,
+        timeout: 8_000,
+        maxBuffer: 1024 * 1024,
+      },
+    );
+    const path = String(stdout ?? "").trim();
+    return path.length > 0 ? path : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function runHostProbe(
+  command: string,
+  windowsPath: string | undefined,
+): Promise<ProbeCommandResult> {
+  const env = buildProbeExecEnv({
+    platform: process.platform,
+    processEnv: process.env,
+    windowsPath,
+  });
+  const hostCommand = buildProbeHostCommand({
+    platform: process.platform,
+    command,
+    shell: process.env.SHELL,
+  });
+  try {
+    const { stdout } = await execAsync(hostCommand, {
       windowsHide: true,
       timeout: COMMAND_TIMEOUT_MS,
       maxBuffer: 1024 * 1024,
+      env,
     });
     return { exitCode: 0, stdout: String(stdout ?? "") };
   } catch (error: unknown) {
@@ -46,7 +83,10 @@ async function openProbeSession(): Promise<ProbeSession | undefined> {
   const terminal = vscode.window.createTerminal({ name: ENV_CHECK_TERMINAL });
   // 新開整合終端以載入 shell profile／更新後的 PATH；不搶焦點。
   terminal.show(false);
-  const integration = await waitForShellIntegration(terminal);
+  const integration = await waitForShellIntegration(
+    terminal,
+    PROBE_SHELL_INTEGRATION_WAIT_MS,
+  );
   if (!integration) {
     terminal.dispose();
     return undefined;
@@ -118,37 +158,43 @@ function commandsFor(tool: EnvironmentToolId): string[] {
 
 /**
  * 主路徑：新開整合終端探測（對齊「外部安裝 → 新終端可見 → 重新檢查」）。
- * 無 Shell Integration 時 fallback 至 extension host shell。
+ * 無 Shell Integration 時靜默 fallback：Windows 用 Machine+User PATH，
+ * macOS/Linux 用登入殼 `-lc`（見 ADR 0005）。
  */
 export function createDefaultProbeRunner(): ProbeRunner {
   let session: ProbeSession | undefined;
-  let hostFallbackNoticeShown = false;
+  /** null = not loaded this recheck; undefined = read failed / non-Windows. */
+  let windowsPathCache: string | undefined | null = null;
 
   return async (tool: EnvironmentToolId) => {
     // recheck 固定 uv→git→node；uv 時新開終端以取得新 PATH／profile。
     if (tool === "uv") {
       session?.dispose();
       session = await openProbeSession();
-      if (!session && !hostFallbackNoticeShown) {
-        hostFallbackNoticeShown = true;
-        void vscode.window.showWarningMessage(
-          "無法在整合終端探測環境工具，已改用編輯器行程 PATH；若剛外部安裝，請重開視窗後再重新檢查。",
-        );
-      }
+      windowsPathCache = null;
     }
+
+    const hostRun = async (command: string): Promise<ProbeCommandResult> => {
+      if (windowsPathCache === null && process.platform === "win32") {
+        windowsPathCache = await readWindowsMachineUserPath();
+      }
+      const windowsPath =
+        typeof windowsPathCache === "string" ? windowsPathCache : undefined;
+      return runHostProbe(command, windowsPath);
+    };
 
     const commands = commandsFor(tool);
     if (tool === "node") {
       const node = session
         ? await session.run(commands[0]!)
-        : await runHostShell(commands[0]!);
+        : await hostRun(commands[0]!);
       const npm = session
         ? await session.run(commands[1]!)
-        : await runHostShell(commands[1]!);
+        : await hostRun(commands[1]!);
       return { ...node, npm };
     }
 
     const command = commands[0]!;
-    return session ? session.run(command) : runHostShell(command);
+    return session ? session.run(command) : hostRun(command);
   };
 }

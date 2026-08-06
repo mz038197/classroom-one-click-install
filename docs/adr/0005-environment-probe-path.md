@@ -1,0 +1,3 @@
+# Environment probe: integrated terminal first, system/login-shell PATH fallback
+
+Toolchain Ready should match what a student sees after opening a fresh integrated terminal (`xxx --version`). We probe via a dedicated terminal + Shell Integration when available (2s wait for probes — shorter than install — because Cursor often never enables SI). When SI is unavailable we do **not** toast and do **not** rely on the stale extension-host PATH alone: on Windows we exec with Machine+User Path from the environment APIs; on macOS/Linux we wrap the same version command in the user's login shell (`$SHELL -lc`). Rejected: alarming fallback toasts, treating bare host PATH as equal to the terminal, and marking tools "unknown" whenever SI fails (too noisy for classroom Cursor).

@@ -134,7 +134,8 @@ actions:
 
 ### 偵測
 
-- 在整合終端機執行「找得到指令＋版本命令成功」才算就緒。  
+- 優先在整合終端機執行「找得到指令＋版本命令成功」才算就緒（Shell Integration）。  
+- 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑同一組版本命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；不彈警告 toast。  
 - **與是否由本擴充功能安裝無關**；學生在外部終端機裝好，重開／新開整合終端後按「重新檢查」即可顯示版本。  
 - Node 須同時驗證 `node` 與 `npm`。  
 - 細節與各 OS 指令：[研究 01](../.scratch/classroom-one-click-install/research/01-toolchain-install-win-mac.md)
