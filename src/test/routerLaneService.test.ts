@@ -134,6 +134,80 @@ describe("RouterLaneService", () => {
     assert.doesNotMatch(lane.getView().detail, /登入 Google/);
   });
 
+  it("does not allow 連線登入 without Invite Code", async () => {
+    let opened = false;
+    const client: RouterPortalClient = {
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("unused");
+      },
+    };
+    const { options } = baseOptions({
+      openExternal: async () => {
+        opened = true;
+        return true;
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    assert.equal(lane.getView().canOpenSignIn, false);
+    assert.equal(lane.getView().showPasteUi, false);
+    await lane.openGoogleSignIn();
+    assert.equal(opened, false);
+    assert.equal(lane.getView().status, "idle");
+    assert.match(lane.getView().detail, /邀請碼/);
+  });
+
+  it("enables 連線登入 only after Invite Code and hides paste UI until awaiting", async () => {
+    const client: RouterPortalClient = {
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("unused");
+      },
+    };
+    const { options } = baseOptions();
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    assert.equal(lane.getView().canOpenSignIn, true);
+    assert.equal(lane.getView().showPasteUi, false);
+    assert.equal(lane.getView().canRedeem, false);
+
+    await lane.openGoogleSignIn();
+    assert.equal(lane.getView().status, "awaiting_sign_in");
+    assert.equal(lane.getView().showPasteUi, true);
+    assert.equal(lane.getView().canRedeem, true);
+    assert.equal(lane.getView().canOpenSignIn, true);
+  });
+
+  it("clears pending handoff when 重新連線登入", async () => {
+    let openCount = 0;
+    const client: RouterPortalClient = {
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("should not redeem without fresh handoff path in this test");
+      },
+    };
+    const { options } = baseOptions({
+      openExternal: async () => {
+        openCount += 1;
+        return true;
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("CODE");
+    // Simulate handoff arrived without invite first… then invite present but we re-open.
+    // With invite present, acceptHandoff would redeem — so clear invite briefly:
+    lane.setInviteCode("");
+    await lane.acceptHandoffInput(sampleToken);
+    assert.equal(lane.getView().status, "awaiting_sign_in");
+    lane.setInviteCode("CODE");
+    await lane.openGoogleSignIn();
+    assert.equal(openCount, 1);
+    // Old handoff must be gone: redeem without new paste should ask for sign-in handoff.
+    await lane.redeemAndSetup();
+    assert.equal(lane.getView().status, "awaiting_sign_in");
+    assert.match(lane.getView().detail, /連線登入|貼碼|Sign-in Handoff/);
+  });
+
   it("clears classroom connection and resets to idle", async () => {
     let cleared = false;
     const client: RouterPortalClient = {

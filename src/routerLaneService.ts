@@ -24,6 +24,8 @@ export type RouterLaneView = {
   detail: string;
   classLabel?: string;
   expiresAt?: string;
+  /** Paste-code fallback +「貼上並完成連線」：僅等待／失敗支線可見。 */
+  showPasteUi: boolean;
   canRedeem: boolean;
   canOpenSignIn: boolean;
   canClear: boolean;
@@ -91,14 +93,19 @@ export class RouterLaneService {
   getView(): RouterLaneView {
     const busy = this.status === "busy";
     const blocked = this.unsupportedHost;
+    const hasInvite = !!this.inviteCode.trim();
+    const showPasteUi =
+      !blocked &&
+      (this.status === "awaiting_sign_in" || this.status === "error");
     return {
       status: this.status,
       inviteCode: this.inviteCode,
       detail: this.detail,
       ...(this.classLabel ? { classLabel: this.classLabel } : {}),
       ...(this.expiresAt ? { expiresAt: this.expiresAt } : {}),
-      canRedeem: !busy && !blocked && !!this.inviteCode.trim(),
-      canOpenSignIn: !busy && !blocked,
+      showPasteUi,
+      canRedeem: showPasteUi && !busy && hasInvite,
+      canOpenSignIn: !busy && !blocked && hasInvite,
       canClear: !busy && !blocked && this.status === "ready",
     };
   }
@@ -115,9 +122,18 @@ export class RouterLaneService {
     if (this.blockIfUnsupported()) {
       return { needsReload: false };
     }
+    if (!this.inviteCode.trim()) {
+      this.status = "idle";
+      this.detail = "請先輸入邀請碼，再按「連線登入」。";
+      this.emit();
+      return { needsReload: false };
+    }
+    // R1：重新連線登入時丟掉舊手遞，避免過期 token 被誤用。
+    this.pendingHandoff = undefined;
     const url = `${this.options.baseUrl.replace(/\/+$/, "")}/auth/google/login?client=extension`;
     this.status = "awaiting_sign_in";
-    this.detail = "已開啟瀏覽器，請完成 Google 登入。若編輯器未自動回來，請貼上一次性貼碼。";
+    this.detail =
+      "已開啟瀏覽器，請完成 Google 登入。若編輯器未自動回來，請貼上一次性貼碼後按「貼上並完成連線」。";
     this.emit();
     await this.options.openExternal(url);
     return { needsReload: false };
@@ -138,7 +154,8 @@ export class RouterLaneService {
     this.pendingHandoff = token;
     if (!this.inviteCode.trim()) {
       this.status = "awaiting_sign_in";
-      this.detail = "已收到登入證明。請輸入邀請碼後按「兌換並設定」。";
+      this.detail =
+        "已收到登入證明。請輸入邀請碼後按「貼上並完成連線」。";
       this.emit();
       return { needsReload: false };
     }
@@ -158,7 +175,8 @@ export class RouterLaneService {
     }
     if (!this.pendingHandoff) {
       this.status = "awaiting_sign_in";
-      this.detail = "請先按「連線登入」完成 Sign-in Handoff。";
+      this.detail =
+        "尚未收到登入證明。請按「重新連線登入」，或貼上一次性貼碼後按「貼上並完成連線」。";
       this.emit();
       return { needsReload: false };
     }

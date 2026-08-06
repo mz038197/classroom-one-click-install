@@ -40,6 +40,7 @@ export type SidebarRouterVm = {
   inviteCode: string;
   detail: string;
   classLabel?: string;
+  showPasteUi: boolean;
   canOpenSignIn: boolean;
   canRedeem: boolean;
   canClear: boolean;
@@ -91,11 +92,12 @@ export function buildSidebarViewModel(
       inviteCode: router.inviteCode,
       detail: router.detail,
       ...(router.classLabel ? { classLabel: router.classLabel } : {}),
+      showPasteUi: router.showPasteUi,
       canOpenSignIn: router.canOpenSignIn,
       canRedeem: router.canRedeem,
       canClear: router.canClear,
-      signInLabel: "連線登入",
-      redeemLabel: "兌換並設定",
+      signInLabel: routerSignInLabel(router.status),
+      redeemLabel: "貼上並完成連線",
       clearLabel: "清除課堂連線",
     },
     environment: {
@@ -132,6 +134,13 @@ function routerStatusLabel(status: RouterLaneView["status"]): string {
     default:
       return "尚未設定";
   }
+}
+
+function routerSignInLabel(status: RouterLaneView["status"]): string {
+  if (status === "awaiting_sign_in" || status === "error") {
+    return "重新連線登入";
+  }
+  return "連線登入";
 }
 
 function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] {

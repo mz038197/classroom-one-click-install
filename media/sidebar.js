@@ -155,10 +155,11 @@
       statusLabel: "尚未設定",
       inviteCode: "",
       detail: "",
-      canOpenSignIn: true,
+      showPasteUi: false,
+      canOpenSignIn: false,
       canRedeem: false,
       signInLabel: "連線登入",
-      redeemLabel: "兌換並設定",
+      redeemLabel: "貼上並完成連線",
     };
     const routerHead = laneHeader("router", "課堂連線", null);
     const routerBody = el("div", { className: "lane-body" });
@@ -193,16 +194,19 @@
       }),
     );
     routerBody.appendChild(inviteField);
-    const pasteField = el(
-      "div",
-      { className: "field" },
-      el("label", { text: "一次性貼碼（深連結失敗時）", for: "handoff-paste" }),
-      el("textarea", {
-        id: "handoff-paste",
-        placeholder: "從瀏覽器複製貼碼到這裡",
-      }),
-    );
-    routerBody.appendChild(pasteField);
+    const showPasteUi = !!router.showPasteUi;
+    if (showPasteUi) {
+      const pasteField = el(
+        "div",
+        { className: "field" },
+        el("label", { text: "一次性貼碼（深連結失敗時）", for: "handoff-paste" }),
+        el("textarea", {
+          id: "handoff-paste",
+          placeholder: "從瀏覽器複製貼碼到這裡",
+        }),
+      );
+      routerBody.appendChild(pasteField);
+    }
     const routerActions = el("div", { className: "row-actions" });
     const signInBtn = el("button", {
       className: "primary",
@@ -211,24 +215,26 @@
       onclick: () => vscode.postMessage({ type: "routerSignIn" }),
     });
     signInBtn.disabled = !router.canOpenSignIn;
-    const redeemBtn = el("button", {
-      className: "secondary",
-      type: "button",
-      text: router.redeemLabel || "兌換並設定",
-      onclick: () => {
-        const paste = document.getElementById("handoff-paste");
-        const pasteValue =
-          paste instanceof HTMLTextAreaElement ? paste.value.trim() : "";
-        if (pasteValue) {
-          vscode.postMessage({ type: "routerHandoffPaste", raw: pasteValue });
-        } else {
-          vscode.postMessage({ type: "routerRedeem" });
-        }
-      },
-    });
-    redeemBtn.disabled = !router.canRedeem;
     routerActions.appendChild(signInBtn);
-    routerActions.appendChild(redeemBtn);
+    if (showPasteUi) {
+      const redeemBtn = el("button", {
+        className: "secondary",
+        type: "button",
+        text: router.redeemLabel || "貼上並完成連線",
+        onclick: () => {
+          const paste = document.getElementById("handoff-paste");
+          const pasteValue =
+            paste instanceof HTMLTextAreaElement ? paste.value.trim() : "";
+          if (pasteValue) {
+            vscode.postMessage({ type: "routerHandoffPaste", raw: pasteValue });
+          } else {
+            vscode.postMessage({ type: "routerRedeem" });
+          }
+        },
+      });
+      redeemBtn.disabled = !router.canRedeem;
+      routerActions.appendChild(redeemBtn);
+    }
     if (router.canClear) {
       const clearBtn = el("button", {
         className: "secondary",

@@ -21,8 +21,8 @@ _Avoid_: 全域模組, 系統套件（太寬）
 _Avoid_: 巢狀 `groups`（已撤回）, 遙控清單（MVP 不做）, 應用內建唯一清單, 多份清單（MVP 不做）
 
 **Router Lane**:
-側邊欄最上方區塊（學生可見標題「課堂連線」）：學生輸入 Invite Code、完成 Sign-in Handoff 與兌換，並執行 BYOK Setup；可整區收合／展開。課堂主路徑在此；Portal 網頁兌換與下載 install 腳本僅為備援。
-_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑
+側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。
+_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕
 
 **Environment Lane**:
 側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。
@@ -43,7 +43,7 @@ _Avoid_: 市集側載, Open VSX 安裝（本產品不上架 Open VSX）
 _Avoid_: 從市集安裝, 本機開發 Host（F5）當課堂安裝
 
 **Invite Code**:
-老師為某一課堂發出、給學生兌換用的短碼；學生只在擴充內輸入，不經深連結或開啟登入的 URL 傳遞。擴充內輸入不改變既有兌換威脅模型（仍須 Google 身分＋有效碼）；不在此產品範圍內單獨加硬 router（如 rate limit）。
+老師為某一課堂發出、給學生兌換用的短碼；學生只在擴充內輸入，不經深連結或開啟登入的 URL 傳遞。空白時不可開始「連線登入」；有碼且 Sign-in Handoff 到達時自動兌換。擴充內輸入不改變既有兌換威脅模型（仍須 Google 身分＋有效碼）；不在此產品範圍內單獨加硬 router（如 rate limit）。
 _Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把擴充輸入框本身當成新的匿名兌換破口
 
 **Classroom API Key**:

@@ -25,7 +25,7 @@
 ### 範圍（MVP）
 
 - VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course）  
-- Router Lane：輸入 Invite Code → 瀏覽器 Google → Sign-in Handoff（`vscode://`／貼碼）→ 兌換 Classroom API Key → BYOK Setup（向 router 拉模型清單、寫入**目前 Host**）。見 [ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
+- Router Lane：須先輸入 Invite Code 才能「連線登入」→ 瀏覽器 Google → Sign-in Handoff（深連結成功則自動兌換；失敗才露出貼碼與「貼上並完成連線」）→ Classroom API Key → BYOK Setup（向 router 拉模型清單、寫入**目前 Host**）。見 [ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：讀取工作區根目錄 `classroom-installs.yaml`，執行其中的整段 `command`  
 - 執行前確認完整命令；公開 `git+https` repo 假設  

@@ -9,8 +9,9 @@ const routerIdle: RouterLaneView = {
   status: "idle",
   inviteCode: "",
   detail: "輸入邀請碼",
+  showPasteUi: false,
   canRedeem: false,
-  canOpenSignIn: true,
+  canOpenSignIn: false,
   canClear: false,
 };
 
@@ -68,6 +69,8 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.title, "凡思課堂安裝");
     assert.equal(vm.workspaceLabel, "工作區：demo");
     assert.equal(vm.router.signInLabel, "連線登入");
+    assert.equal(vm.router.redeemLabel, "貼上並完成連線");
+    assert.equal(vm.router.showPasteUi, false);
     assert.equal(vm.router.statusLabel, "尚未設定");
     assert.equal(vm.environment.tools.length, 3);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");
@@ -75,6 +78,27 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.course.actions[0]?.kindLabel, "套件");
     assert.equal(vm.course.actions[0]?.actionLabel, "安裝");
     assert.equal(vm.hasCustomCommandInput, false);
+  });
+
+  it("shows paste UI labels while awaiting Sign-in Handoff", () => {
+    const routerAwaiting: RouterLaneView = {
+      status: "awaiting_sign_in",
+      inviteCode: "ABC",
+      detail: "已開啟瀏覽器",
+      showPasteUi: true,
+      canRedeem: true,
+      canOpenSignIn: true,
+      canClear: false,
+    };
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerAwaiting,
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(vm.router.showPasteUi, true);
+    assert.equal(vm.router.signInLabel, "重新連線登入");
+    assert.equal(vm.router.redeemLabel, "貼上並完成連線");
   });
 
   it("surfaces disabled reason and does not offer a run label action", () => {
