@@ -94,14 +94,19 @@ export function activate(context: vscode.ExtensionContext): void {
       return;
     }
     const openPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    scheduleRelaunchAfterQuit(
+    const scheduled = scheduleRelaunchAfterQuit(
       buildRelaunchAfterQuitPlan({
         platform: process.platform,
         execPath: process.execPath,
         openPath,
-        comSpec: process.env.ComSpec,
       }),
     );
+    if (!scheduled) {
+      await vscode.window.showErrorMessage(
+        "無法排程自動重開，已取消退出。請手動關閉並再開 VS Code（勿只按重載視窗）。",
+      );
+      return;
+    }
     await vscode.commands.executeCommand("workbench.action.quit");
   };
 

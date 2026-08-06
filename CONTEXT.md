@@ -61,3 +61,7 @@ _Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失
 **BYOK Setup**:
 把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。僅支援 VS Code；Cursor 不自動寫入，改提示 Portal／手動。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。
 _Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret
+
+**Host Full Restart**:
+完整退出目前 Host 並自動再開同一 Host，使 Host secret／pending BYOK 等需進程重生才穩定的狀態生效；學生可見動作為「重新啟動」。硬承諾：按下後必須回來，不可只關不開卻仍稱重啟。
+_Avoid_: Reload Window（重載視窗）, 只執行退出卻不重開, 把「稍後手動重開」當成同等主路徑
