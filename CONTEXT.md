@@ -39,6 +39,10 @@ _Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完�
 uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
 _Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 僅編輯器行程啟動當下 PATH
 
+**Branded Distribution**:
+同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id 與預設 `routerBaseUrl`；Install Action／三條 Lane／Router 契約不為品牌各寫一套。
+_Avoid_: 為每個品牌複製業務邏輯, Template 複製後永不合併, 要求 Pegasi 學生共用凡思 extension id
+
 **Marketplace Install**:
 VS Code 學生從 Visual Studio Marketplace 安裝本擴充功能的主路徑。
 _Avoid_: 市集側載, Open VSX 安裝（本產品不上架 Open VSX）
