@@ -6,10 +6,12 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, it } from "node:test";
 import { CLASSROOM_CHAT_LM_SECRET_KEY } from "../hostLmSecret";
 import {
+  HOST_STATE_DB_BUSY_TIMEOUT_MS,
   ensureHostChatLmSecret,
   extensionSecretStorageKey,
   hostChatLmSecretStorageKey,
   hostStateDbPath,
+  isHostStateDbBusyError,
   promoteExtensionSecretToHost,
   serializeSafeStorageBuffer,
   writeHostChatLmSecret,
@@ -38,6 +40,16 @@ describe("hostStateDb keys", () => {
       extensionSecretStorageKey("vans-coding.vans-classroom-install", CLASSROOM_CHAT_LM_SECRET_KEY),
       'secret://{"extensionId":"vans-coding.vans-classroom-install","key":"chat.lm.secret.-7a55c1a5"}',
     );
+  });
+});
+
+describe("isHostStateDbBusyError", () => {
+  it("detects SQLite busy/locked messages only", () => {
+    assert.equal(isHostStateDbBusyError(new Error("database is locked")), true);
+    assert.equal(isHostStateDbBusyError(new Error("Database is busy")), true);
+    assert.equal(isHostStateDbBusyError(new Error("SQLITE_BUSY: unable to acquire")), true);
+    assert.equal(isHostStateDbBusyError(new Error("找不到擴充 SecretStorage 列")), false);
+    assert.equal(HOST_STATE_DB_BUSY_TIMEOUT_MS, 3000);
   });
 });
 

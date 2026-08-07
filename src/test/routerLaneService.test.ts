@@ -244,4 +244,29 @@ describe("RouterLaneService", () => {
     assert.equal(result.needsReload, true);
   });
 
+  it("maps Host DB busy on clear to student copy and offerRestart", async () => {
+    const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("unused");
+      },
+    };
+    const { secrets, options } = baseOptions({
+      clearByok: async () => {
+        throw new Error("database is locked");
+      },
+    });
+    secrets.set("classroomApiKey", "vcr_sk_x");
+    const lane = new RouterLaneService(client, options);
+    await lane.restoreFromSecrets();
+
+    const result = await lane.clearClassroomConnection();
+    assert.equal(result.needsReload, false);
+    assert.equal(result.offerRestart, true);
+    assert.equal(lane.getView().status, "error");
+    assert.match(lane.getView().detail, /本機忙碌/);
+    assert.doesNotMatch(lane.getView().detail, /database is locked/i);
+  });
+
 });

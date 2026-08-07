@@ -9,8 +9,8 @@ import {
 import { deleteHostChatLmSecret } from "./hostStateDb";
 
 /**
- * Clear Classroom Connection: remove VCRouter from models JSON, Host secret row,
- * and extension-scoped secrets. Does not touch other providers.
+ * Clear Classroom Connection: remove Classroom API Key (Host + extension), then
+ * VCRouter from models JSON. Does not touch other providers.
  */
 export async function clearClassroomConnection(options: {
   userDir: string;
@@ -29,6 +29,14 @@ export async function clearClassroomConnection(options: {
   const writeFile = options.writeFile ?? ((p, d) => fs.writeFile(p, d, "utf8"));
   const deleteHost = options.deleteHostSecret ?? deleteHostChatLmSecret;
 
+  await deleteHost({
+    stateDbPath: options.stateDbPath,
+    secretKey: CLASSROOM_CHAT_LM_SECRET_KEY,
+  });
+  const apiKeySecretKey = options.apiKeySecretKey ?? "classroomApiKey";
+  await options.deleteSecret(apiKeySecretKey);
+  await options.deleteSecret(CLASSROOM_CHAT_LM_SECRET_KEY);
+
   try {
     const raw = await readFile(modelsPath);
     const parsed: unknown = JSON.parse(raw);
@@ -45,14 +53,6 @@ export async function clearClassroomConnection(options: {
       throw err;
     }
   }
-
-  await deleteHost({
-    stateDbPath: options.stateDbPath,
-    secretKey: CLASSROOM_CHAT_LM_SECRET_KEY,
-  });
-  const apiKeySecretKey = options.apiKeySecretKey ?? "classroomApiKey";
-  await options.deleteSecret(apiKeySecretKey);
-  await options.deleteSecret(CLASSROOM_CHAT_LM_SECRET_KEY);
 
   return { modelsPath };
 }
