@@ -14,7 +14,10 @@ import {
 } from "./hostStateDb";
 import type { RouterPortalClient } from "./routerPortalClient";
 import { parseHandoffToken } from "./routerHandoffUri";
-import { clearClassroomConnectionBusyMessage } from "./studentCopy";
+import {
+  classroomApiKeyReadyDetail,
+  clearClassroomConnectionBusyMessage,
+} from "./studentCopy";
 import { writeByokFile } from "./writeByokFile";
 
 export type RouterLaneStatus =
@@ -35,6 +38,8 @@ export type RouterLaneView = {
   canRedeem: boolean;
   canOpenSignIn: boolean;
   canClear: boolean;
+  /** Copy Classroom API Key control; only when ready with a stored key. */
+  canCopyApiKey: boolean;
 };
 
 export type RouterLaneActionResult = {
@@ -115,6 +120,7 @@ export class RouterLaneService {
       canRedeem: showPasteUi && !busy && hasInvite,
       canOpenSignIn: !busy && !blocked && hasInvite,
       canClear: !busy && !blocked && this.status === "ready",
+      canCopyApiKey: !busy && !blocked && this.status === "ready",
     };
   }
 
@@ -203,7 +209,7 @@ export class RouterLaneService {
       const apiKeyRef = toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY);
       const write = this.options.writeByok ?? writeByokFile;
       const userDir = this.options.resolveUserDir();
-      const target = await write({
+      await write({
         userDir,
         template,
         apiKey: apiKeyRef,
@@ -235,7 +241,7 @@ export class RouterLaneService {
         undefined;
       this.expiresAt = redeemed.session.expires_at;
       this.status = "ready";
-      this.detail = `已完成 BYOK 設定（${target}）。請按右下角「重新啟動」，然後選 VCRouter 模型（勿只重載視窗）。`;
+      this.detail = classroomApiKeyReadyDetail();
       this.emit();
       return { needsReload: true };
     } catch (err) {
@@ -297,7 +303,7 @@ export class RouterLaneService {
     if (isPlainClassroomApiKey(key)) {
       if (this.status === "idle") {
         this.status = "ready";
-        this.detail = "Classroom API Key 已設定。";
+        this.detail = classroomApiKeyReadyDetail();
         this.emit();
       }
     }

@@ -13,6 +13,7 @@ const routerIdle: RouterLaneView = {
   canRedeem: false,
   canOpenSignIn: false,
   canClear: false,
+  canCopyApiKey: false,
 };
 
 const envReady: EnvironmentLaneView = {
@@ -72,6 +73,7 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.router.redeemLabel, "貼上並完成連線");
     assert.equal(vm.router.showPasteUi, false);
     assert.equal(vm.router.statusLabel, "尚未設定");
+    assert.equal(vm.router.canCopyApiKey, false);
     assert.equal(vm.environment.tools.length, 3);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");
     assert.equal(vm.course.actions[0]?.kind, "package");
@@ -89,6 +91,7 @@ describe("buildSidebarViewModel", () => {
       canRedeem: true,
       canOpenSignIn: true,
       canClear: false,
+      canCopyApiKey: false,
     };
     const vm = buildSidebarViewModel({
       workspaceName: "demo",
@@ -99,6 +102,34 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.router.showPasteUi, true);
     assert.equal(vm.router.signInLabel, "重新連線登入");
     assert.equal(vm.router.redeemLabel, "貼上並完成連線");
+  });
+
+  it("exposes Copy Classroom API Key when Router Lane is ready", () => {
+    const routerReady: RouterLaneView = {
+      status: "ready",
+      inviteCode: "",
+      detail: "Classroom API Key 已設定。",
+      showPasteUi: false,
+      canRedeem: false,
+      canOpenSignIn: false,
+      canClear: true,
+      canCopyApiKey: true,
+    };
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerReady,
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(vm.router.statusLabel, "已設定");
+    assert.equal(vm.router.canCopyApiKey, true);
+    assert.equal(vm.router.copyApiKeyLabel, "複製");
+    assert.equal(vm.router.copyDetailLabel, "Classroom API Key");
+    assert.equal(vm.router.copyDetailSuffix, " 已設定。");
+    assert.equal(
+      vm.router.copyDetailLabel + vm.router.copyDetailSuffix,
+      vm.router.detail,
+    );
   });
 
   it("surfaces disabled reason and does not offer a run label action", () => {

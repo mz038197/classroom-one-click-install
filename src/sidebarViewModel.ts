@@ -8,6 +8,10 @@ import type {
 import type { RouterLaneView } from "./routerLaneService";
 import type { EnvironmentToolId } from "./toolProbe";
 import { buildSidebarShell } from "./sidebarShell";
+import {
+  CLASSROOM_API_KEY_LABEL,
+  CLASSROOM_API_KEY_READY_SUFFIX,
+} from "./studentCopy";
 
 export type SidebarEnvToolVm = {
   id: EnvironmentToolId;
@@ -44,9 +48,14 @@ export type SidebarRouterVm = {
   canOpenSignIn: boolean;
   canRedeem: boolean;
   canClear: boolean;
+  canCopyApiKey: boolean;
   signInLabel: string;
   redeemLabel: string;
   clearLabel: string;
+  copyApiKeyLabel: string;
+  /** Ready-row parts around the copy icon; unused when canCopyApiKey is false. */
+  copyDetailLabel: string;
+  copyDetailSuffix: string;
 };
 
 export type SidebarViewModel = {
@@ -100,9 +109,13 @@ export function buildSidebarViewModel(
       canOpenSignIn: router.canOpenSignIn,
       canRedeem: router.canRedeem,
       canClear: router.canClear,
+      canCopyApiKey: router.canCopyApiKey,
       signInLabel: routerSignInLabel(router.status),
       redeemLabel: "貼上並完成連線",
       clearLabel: "清除課堂連線",
+      copyApiKeyLabel: "複製",
+      copyDetailLabel: CLASSROOM_API_KEY_LABEL,
+      copyDetailSuffix: CLASSROOM_API_KEY_READY_SUFFIX,
     },
     environment: {
       toolchainReady: env.toolchainReady,

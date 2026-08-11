@@ -59,6 +59,45 @@
     return "status " + String(status || "idle");
   }
 
+  /** Ready detail:「Classroom API Key」+ 複製 icon +「已設定。」；其餘狀態整句 detail。 */
+  function routerDetailRow(router) {
+    if (!router.canCopyApiKey) {
+      return el("p", { className: "card-detail", text: router.detail || "" });
+    }
+    const copyBtn = el("button", {
+      className: "icon-btn",
+      type: "button",
+      title: router.copyApiKeyLabel || "複製",
+      "aria-label": router.copyApiKeyLabel || "複製",
+      onclick: () => vscode.postMessage({ type: "routerCopyApiKey" }),
+    });
+    copyBtn.appendChild(copyIconSvg());
+    return el(
+      "p",
+      { className: "card-detail detail-with-copy" },
+      el("span", { text: router.copyDetailLabel || "Classroom API Key" }),
+      copyBtn,
+      el("span", { text: router.copyDetailSuffix || " 已設定。" }),
+    );
+  }
+
+  function copyIconSvg() {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute(
+      "d",
+      "M4 2a2 2 0 0 0-2 2v8h1.5V4a.5.5 0 0 1 .5-.5H10V2H4zm3 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7zm0 1.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H7a.5.5 0 0 1-.5-.5V7a.5.5 0 0 1 .5-.5z",
+    );
+    path.setAttribute("fill", "currentColor");
+    svg.appendChild(path);
+    return svg;
+  }
+
   function statusTextEnv(tool) {
     switch (tool.status) {
       case "ready":
@@ -174,9 +213,7 @@
         el("p", { className: "card-detail", text: router.classLabel }),
       );
     }
-    routerBody.appendChild(
-      el("p", { className: "card-detail", text: router.detail || "" }),
-    );
+    routerBody.appendChild(routerDetailRow(router));
     const inviteField = el(
       "div",
       { className: "field" },

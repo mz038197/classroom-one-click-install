@@ -193,6 +193,31 @@ export function getSidebarWebviewHtml(
       font-size: 11px;
       opacity: 0.85;
     }
+    .detail-with-copy {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2px;
+      opacity: 1;
+    }
+    .detail-with-copy > span { opacity: 0.85; }
+    button.icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 2px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--vscode-foreground);
+      opacity: 0.85;
+      line-height: 0;
+    }
+    button.icon-btn:hover:not(:disabled) {
+      background: var(--vscode-toolbar-hoverBackground, rgba(127,127,127,.12));
+      opacity: 1;
+    }
     .status {
       display: inline-flex;
       align-items: center;

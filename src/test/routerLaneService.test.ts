@@ -82,7 +82,9 @@ describe("RouterLaneService", () => {
     assert.equal(hostPlaintext, "vcr_sk_testkey");
     assert.equal(result.needsReload, true);
     assert.equal(lane.getView().canClear, true);
-    assert.match(lane.getView().detail, /BYOK/);
+    assert.equal(lane.getView().canCopyApiKey, true);
+    assert.equal(lane.getView().detail, "Classroom API Key 已設定。");
+    assert.doesNotMatch(lane.getView().detail, /BYOK|vcr_sk_/);
   });
 
   it("blocks Cursor host without redeeming", async () => {
@@ -118,6 +120,7 @@ describe("RouterLaneService", () => {
     await lane.restoreFromSecrets();
     assert.equal(lane.getView().status, "ready");
     assert.equal(lane.getView().detail, "Classroom API Key 已設定。");
+    assert.equal(lane.getView().canCopyApiKey, true);
     assert.doesNotMatch(lane.getView().detail, /vcr_sk_/);
   });
 
@@ -236,11 +239,13 @@ describe("RouterLaneService", () => {
     await lane.restoreFromSecrets();
     assert.equal(lane.getView().status, "ready");
     assert.equal(lane.getView().canClear, true);
+    assert.equal(lane.getView().canCopyApiKey, true);
 
     const result = await lane.clearClassroomConnection();
     assert.equal(cleared, true);
     assert.equal(lane.getView().status, "idle");
     assert.equal(lane.getView().canClear, false);
+    assert.equal(lane.getView().canCopyApiKey, false);
     assert.equal(result.needsReload, true);
   });
 

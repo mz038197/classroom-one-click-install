@@ -18,6 +18,7 @@ type WebviewInbound =
   | { type: "routerSignIn" }
   | { type: "routerRedeem" }
   | { type: "routerClear" }
+  | { type: "routerCopyApiKey" }
   | { type: "routerHandoffPaste"; raw: string }
   | { type: "retryRemoteCatalog" };
 
@@ -38,6 +39,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       routerSignIn: () => Promise<void>;
       routerRedeem: () => Promise<void>;
       routerClear: () => Promise<void>;
+      routerCopyApiKey: () => Promise<void>;
       routerHandoffPaste: (raw: string) => Promise<void>;
       retryRemoteCatalog: () => Promise<void>;
     },
@@ -117,6 +119,9 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
         return;
       case "routerClear":
         await this.handlers.routerClear();
+        return;
+      case "routerCopyApiKey":
+        await this.handlers.routerCopyApiKey();
         return;
       case "routerHandoffPaste":
         if (typeof msg.raw === "string") {

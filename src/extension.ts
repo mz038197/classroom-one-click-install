@@ -32,7 +32,12 @@ import {
   RUN_INSTALL_ACTION_COMMAND,
 } from "./sidebarCommands";
 import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
-import { clearClassroomConnectionBusyMessage } from "./studentCopy";
+import { copyClassroomApiKey } from "./copyClassroomApiKey";
+import {
+  clearClassroomConnectionBusyMessage,
+  copyClassroomApiKeyFailureMessage,
+  copyClassroomApiKeySuccessMessage,
+} from "./studentCopy";
 
 const API_KEY_SECRET = "classroomApiKey";
 
@@ -180,6 +185,22 @@ export function activate(context: vscode.ExtensionContext): void {
             : CLEAR_RESTART_MESSAGE,
           false,
         );
+      },
+      routerCopyApiKey: async () => {
+        const result = await copyClassroomApiKey({
+          getSecret: (key) => context.secrets.get(key),
+          writeClipboard: (text) => vscode.env.clipboard.writeText(text),
+          apiKeySecretKey: API_KEY_SECRET,
+        });
+        if (result.ok) {
+          void vscode.window.showInformationMessage(
+            copyClassroomApiKeySuccessMessage(),
+          );
+        } else {
+          void vscode.window.showErrorMessage(
+            copyClassroomApiKeyFailureMessage(),
+          );
+        }
       },
       routerHandoffPaste: async (raw) => {
         const result = await routerLane.acceptHandoffInput(raw);
