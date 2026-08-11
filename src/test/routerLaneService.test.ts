@@ -124,6 +124,94 @@ describe("RouterLaneService", () => {
     assert.doesNotMatch(lane.getView().detail, /vcr_sk_/);
   });
 
+  it("persists Class Label on redeem and restores it with the key", async () => {
+    let storedLabel: string | undefined;
+    const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
+      fetchChatLanguageModelsTemplate: async () => [
+        { name: "VCRouter", vendor: "customendpoint", apiKey: "", models: [] },
+      ],
+      redeemWithHandoff: async () => ({
+        api_key: "vcr_sk_label",
+        session: {
+          class_name: "馬公高中專題課",
+          name: "特別保留",
+        },
+      }),
+    };
+    const { options } = baseOptions({
+      writeByok: async () => "/tmp/Code/User/chatLanguageModels.json",
+      writeHostSecret: async () => ({
+        hostStorageKey: "secret://chat.lm.secret.-7a55c1a5",
+      }),
+      classLabelStore: {
+        get: async () => storedLabel,
+        set: async (label: string) => {
+          storedLabel = label;
+        },
+        clear: async () => {
+          storedLabel = undefined;
+        },
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    await lane.acceptHandoffInput(sampleToken);
+    assert.equal(lane.getView().classLabel, "馬公高中專題課 · 特別保留");
+    assert.equal(storedLabel, "馬公高中專題課 · 特別保留");
+
+    const { secrets, options: restoreOpts } = baseOptions({
+      classLabelStore: {
+        get: async () => storedLabel,
+        set: async (label: string) => {
+          storedLabel = label;
+        },
+        clear: async () => {
+          storedLabel = undefined;
+        },
+      },
+    });
+    secrets.set("classroomApiKey", "vcr_sk_label");
+    const restored = new RouterLaneService(client, restoreOpts);
+    await restored.restoreFromSecrets();
+    assert.equal(restored.getView().status, "ready");
+    assert.equal(restored.getView().classLabel, "馬公高中專題課 · 特別保留");
+  });
+
+  it("clears persisted Class Label with Clear Classroom Connection", async () => {
+    let storedLabel: string | undefined = "Demo · Week 1";
+    const client: RouterPortalClient = {
+      fetchCourseCatalogYaml: async () => "actions: []\n",
+      fetchChatLanguageModelsTemplate: async () => [],
+      redeemWithHandoff: async () => {
+        throw new Error("unused");
+      },
+    };
+    const { secrets, options } = baseOptions({
+      clearByok: async () => {
+        secrets.delete("classroomApiKey");
+        return { modelsPath: "/tmp/Code/User/chatLanguageModels.json" };
+      },
+      classLabelStore: {
+        get: async () => storedLabel,
+        set: async (label: string) => {
+          storedLabel = label;
+        },
+        clear: async () => {
+          storedLabel = undefined;
+        },
+      },
+    });
+    secrets.set("classroomApiKey", "vcr_sk_x");
+    const lane = new RouterLaneService(client, options);
+    await lane.restoreFromSecrets();
+    assert.equal(lane.getView().classLabel, "Demo · Week 1");
+
+    await lane.clearClassroomConnection();
+    assert.equal(lane.getView().classLabel, undefined);
+    assert.equal(storedLabel, undefined);
+  });
+
   it("prompts for 連線登入 when redeeming without handoff", async () => {
     const client: RouterPortalClient = {
       fetchCourseCatalogYaml: async () => "actions: []\n",

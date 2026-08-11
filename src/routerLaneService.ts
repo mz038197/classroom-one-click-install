@@ -89,6 +89,12 @@ export class RouterLaneService {
         extensionId: string;
       }) => Promise<{ hostStorageKey: string }>;
       clearByok?: typeof clearClassroomConnection;
+      /** Persist Class Label across Host Full Restart (cleared with connection). */
+      classLabelStore?: {
+        get: () => Thenable<string | undefined>;
+        set: (label: string) => Thenable<void>;
+        clear: () => Thenable<void>;
+      };
     },
   ) {
     this.unsupportedHost = isUnsupportedByokHost(options.uriScheme);
@@ -240,6 +246,11 @@ export class RouterLaneService {
         [redeemed.session.class_name, redeemed.session.name].filter(Boolean).join(" · ") ||
         undefined;
       this.expiresAt = redeemed.session.expires_at;
+      if (this.classLabel) {
+        await this.options.classLabelStore?.set(this.classLabel);
+      } else {
+        await this.options.classLabelStore?.clear();
+      }
       this.status = "ready";
       this.detail = classroomApiKeyReadyDetail();
       this.emit();
@@ -271,6 +282,7 @@ export class RouterLaneService {
         },
         apiKeySecretKey: this.options.apiKeySecretKey,
       });
+      await this.options.classLabelStore?.clear();
       this.inviteCode = "";
       this.pendingHandoff = undefined;
       this.classLabel = undefined;
@@ -302,6 +314,10 @@ export class RouterLaneService {
     const key = await this.options.secretStore.get(secretKey);
     if (isPlainClassroomApiKey(key)) {
       if (this.status === "idle") {
+        const label = await this.options.classLabelStore?.get();
+        if (typeof label === "string" && label.trim()) {
+          this.classLabel = label.trim();
+        }
         this.status = "ready";
         this.detail = classroomApiKeyReadyDetail();
         this.emit();

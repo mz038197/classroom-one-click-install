@@ -2,6 +2,11 @@ import type { EnvironmentToolId } from "./toolProbe";
 
 export type InstallPlatform = "win32" | "darwin";
 
+export type ResolveEnvironmentInstallPlanOptions = {
+  /** When true on win32, git/Node use winget shell plans. */
+  wingetAvailable?: boolean;
+};
+
 export type EnvironmentInstallPlan = {
   tool: EnvironmentToolId;
   platform: InstallPlatform;
@@ -14,10 +19,14 @@ export type EnvironmentInstallPlan = {
   previewCommand?: string;
 };
 
+const WINGET_ACCEPT =
+  "--accept-package-agreements --accept-source-agreements";
+
 /** 規格／研究票預設安裝路徑（不提權、不繞過 MDM）。 */
 export function resolveEnvironmentInstallPlan(
   tool: EnvironmentToolId,
   platform: InstallPlatform,
+  options: ResolveEnvironmentInstallPlanOptions = {},
 ): EnvironmentInstallPlan {
   if (tool === "uv") {
     if (platform === "win32") {
@@ -46,6 +55,16 @@ export function resolveEnvironmentInstallPlan(
 
   if (tool === "git") {
     if (platform === "win32") {
+      if (options.wingetAvailable) {
+        return {
+          tool,
+          platform,
+          kind: "shell",
+          commandOrUrl: `winget install --id Git.Git -e ${WINGET_ACCEPT}`,
+          summary:
+            "將以 winget 安裝 Git for Windows（可能出現 UAC／需 IT；不會嘗試提權）。",
+        };
+      }
       return {
         tool,
         platform,
@@ -67,6 +86,16 @@ export function resolveEnvironmentInstallPlan(
 
   // node
   if (platform === "win32") {
+    if (options.wingetAvailable) {
+      return {
+        tool,
+        platform,
+        kind: "shell",
+        commandOrUrl: `winget install --id OpenJS.NodeJS.LTS -e ${WINGET_ACCEPT}`,
+        summary:
+          "將以 winget 安裝 Node.js LTS（可能出現 UAC／需 IT；不會嘗試提權）。",
+      };
+    }
     return {
       tool,
       platform,

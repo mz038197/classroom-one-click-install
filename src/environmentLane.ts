@@ -20,6 +20,8 @@ export type EnvironmentInstallDeps = {
   platform: InstallPlatform;
   confirm: (title: string, detail: string) => Promise<boolean>;
   execute: (plan: EnvironmentInstallPlan) => Promise<InstallExecuteResult>;
+  /** Windows: prefer winget shell plans for git/Node when true. */
+  wingetAvailable?: () => Promise<boolean>;
 };
 
 export type EnvironmentToolUiStatus =
@@ -195,7 +197,14 @@ export class EnvironmentLaneService {
       return "cancelled";
     }
 
-    const plan = resolveEnvironmentInstallPlan(tool, this.installDeps.platform);
+    const wingetAvailable =
+      this.installDeps.platform === "win32" &&
+      this.installDeps.wingetAvailable
+        ? await this.installDeps.wingetAvailable()
+        : false;
+    const plan = resolveEnvironmentInstallPlan(tool, this.installDeps.platform, {
+      wingetAvailable,
+    });
     const probed = this.statuses[tool];
     const mode =
       this.overlays[tool]?.kind === "needs-reopen-terminal"

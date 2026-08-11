@@ -104,6 +104,42 @@ describe("EnvironmentLaneService install flow", () => {
     assert.match(afterRecheck?.detail ?? "", /IT|管理員/i);
   });
 
+  it("uses winget shell plan for git on Windows when winget is available", async () => {
+    let seenPlan: EnvironmentInstallPlan | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        wingetAvailable: async () => true,
+        execute: async (plan) => {
+          seenPlan = plan;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installTool("git");
+    assert.equal(seenPlan?.kind, "shell");
+    assert.match(seenPlan?.commandOrUrl ?? "", /winget install --id Git\.Git/);
+  });
+
+  it("opens Git download page when winget is unavailable", async () => {
+    let seenPlan: EnvironmentInstallPlan | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        wingetAvailable: async () => false,
+        execute: async (plan) => {
+          seenPlan = plan;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installTool("git");
+    assert.equal(seenPlan?.kind, "open-url");
+    assert.match(seenPlan?.commandOrUrl ?? "", /git-scm\.com/);
+  });
+
   it("allows repair on a ready tool via the same reopen-terminal flow", async () => {
     const probe: ProbeRunner = async (tool) => {
       if (tool === "uv") {

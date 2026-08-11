@@ -25,11 +25,16 @@ _Avoid_: 巢狀 `groups`（已撤回）, 應用內建唯一清單, 多份並行�
 _Avoid_: 只實作單一 router 部署, 兩套不相容的 catalog API／YAML 形狀
 
 **Router Lane**:
-側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。本機已有 Classroom API Key（已設定）時，Router Lane 就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。
-_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）
+側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。本機已有 Classroom API Key（已設定）時，顯示課堂名稱（Class Label），就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart 後 Class Label 仍須與「已設定」一併還原。Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口與 Class Label。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。
+_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）, 重啟後只還原 key 卻丟課堂名稱
+
+**Class Label**:
+Router Lane 就緒時顯示的課堂識別文案（例如 class 名與 session 名以「·」串起）；來自兌換結果，不是 Classroom API Key 本體。須在本機已連線期間跨 Host Full Restart 仍可顯示；隨 Clear Classroom Connection 一併清除。
+_Avoid_: 把 key 當顯示名, 僅記憶體暫存、重啟後消失卻仍稱已連線完整, 側邊欄常駐顯示 key
 
 **Environment Lane**:
-側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。
+側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。本期不改 macOS 路徑。
+_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, 本期一併改 mac brew／Linux
 
 **Course Lane**:
 側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。
@@ -64,8 +69,8 @@ _Avoid_: Portal session, Google token, upstream provider key, 在 Webview 常駐
 _Avoid_: 複製 Sign-in Handoff, 複製 Invite Code, 僅兌換成功當下可複製之後不可再拿, 靠畫面選取明文再複製, 側邊欄展開或常駐顯示完整 key, 命令面板為唯一入口, 只在單一 Host 或單一 Branded Distribution 提供, 每次複製前強制確認對話框, 清除連線時清空剪貼簿, 另做與「Classroom API Key」文案脫節的第二顆主按鈕當唯一複製入口
 
 **Clear Classroom Connection**:
-學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter）。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
-_Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked
+學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，清除本機保存的 Class Label，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter）。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
+_Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked, 清除連線後仍留下 Class Label
 
 **Sign-in Handoff**:
 瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。

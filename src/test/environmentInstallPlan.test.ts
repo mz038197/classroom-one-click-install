@@ -15,8 +15,22 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.match(mac.commandOrUrl, /astral\.sh\/uv\/install\.sh/);
   });
 
-  it("uses Git for Windows download page and macOS Xcode CLT for git", () => {
-    const win = resolveEnvironmentInstallPlan("git", "win32");
+  it("uses winget for git on Windows when available", () => {
+    const win = resolveEnvironmentInstallPlan("git", "win32", {
+      wingetAvailable: true,
+    });
+    assert.equal(win.kind, "shell");
+    assert.equal(
+      win.commandOrUrl,
+      "winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements",
+    );
+    assert.match(win.summary, /winget/i);
+  });
+
+  it("falls back to Git for Windows download page without winget", () => {
+    const win = resolveEnvironmentInstallPlan("git", "win32", {
+      wingetAvailable: false,
+    });
     assert.equal(win.kind, "open-url");
     assert.match(win.commandOrUrl, /git-scm\.com\/install\/windows/);
     assert.match(win.summary, /安裝器|installer|下載/i);
@@ -27,8 +41,22 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.match(mac.summary, /Xcode|Command Line/i);
   });
 
-  it("uses Node.js official LTS download page for both platforms", () => {
-    const win = resolveEnvironmentInstallPlan("node", "win32");
+  it("uses winget for Node.js LTS on Windows when available", () => {
+    const win = resolveEnvironmentInstallPlan("node", "win32", {
+      wingetAvailable: true,
+    });
+    assert.equal(win.kind, "shell");
+    assert.equal(
+      win.commandOrUrl,
+      "winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements",
+    );
+    assert.match(win.summary, /winget/i);
+  });
+
+  it("falls back to Node.js official LTS download page without winget", () => {
+    const win = resolveEnvironmentInstallPlan("node", "win32", {
+      wingetAvailable: false,
+    });
     assert.equal(win.kind, "open-url");
     assert.match(win.commandOrUrl, /nodejs\.org/);
     assert.match(win.summary, /LTS|\.msi|安裝器/i);

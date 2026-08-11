@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { CATALOG_FILENAME, CourseLaneService } from "./courseLaneService";
+import { detectWingetAvailable } from "./detectWinget";
 import {
   confirmEnvironmentInstall,
   detectInstallPlatform,
@@ -54,6 +55,7 @@ export function activate(context: vscode.ExtensionContext): void {
     platform: detectInstallPlatform(),
     confirm: confirmEnvironmentInstall,
     execute: executeEnvironmentInstallPlan,
+    wingetAvailable: () => detectWingetAvailable(),
   });
   const baseUrl = defaultRouterBaseUrl((key) =>
     vscode.workspace.getConfiguration().get(key),
@@ -71,6 +73,7 @@ export function activate(context: vscode.ExtensionContext): void {
       uriScheme: vscode.env.uriScheme,
     });
 
+  const CLASS_LABEL_STATE_KEY = "classroomClassLabel";
   const routerLane = new RouterLaneService(portalClient, {
     baseUrl,
     openExternal: (url) => vscode.env.openExternal(vscode.Uri.parse(url)),
@@ -83,6 +86,15 @@ export function activate(context: vscode.ExtensionContext): void {
       delete: (key) => context.secrets.delete(key),
     },
     apiKeySecretKey: API_KEY_SECRET,
+    classLabelStore: {
+      get: async () => context.globalState.get<string>(CLASS_LABEL_STATE_KEY),
+      set: async (label) => {
+        await context.globalState.update(CLASS_LABEL_STATE_KEY, label);
+      },
+      clear: async () => {
+        await context.globalState.update(CLASS_LABEL_STATE_KEY, undefined);
+      },
+    },
   });
 
   let catalogWatcher: vscode.FileSystemWatcher | undefined;
