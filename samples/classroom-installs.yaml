@@ -21,6 +21,13 @@ actions:
     command: >-
       uvx --from git+https://github.com/mz038197/dataset-streamlit-shell-installer.git add-dataset-streamlit-shell --update
 
+  - id: add-shell-agent
+    title: 接上 Shell Agent
+    kind: package
+    description: 從 vans 模板寫入 main_shell.py，並填入 main.py 的角色設定
+    command: >-
+      uvx --from git+https://github.com/mz038197/agentic_ai_vans.git@master#subdirectory=shell-agent-tool add-shell-agent
+
   - id: mattpocock-skills
     title: 安裝 Matt Pocock skills
     kind: skill
