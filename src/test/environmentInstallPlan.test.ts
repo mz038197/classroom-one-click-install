@@ -60,10 +60,17 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.equal(win.kind, "open-url");
     assert.match(win.commandOrUrl, /nodejs\.org/);
     assert.match(win.summary, /LTS|\.msi|安裝器/i);
+  });
 
+  it("installs Node on macOS via unpinned nvm then current LTS", () => {
     const mac = resolveEnvironmentInstallPlan("node", "darwin");
-    assert.equal(mac.kind, "open-url");
-    assert.match(mac.commandOrUrl, /nodejs\.org/);
-    assert.match(mac.summary, /LTS|\.pkg|安裝器/i);
+    assert.equal(mac.kind, "shell");
+    assert.match(mac.commandOrUrl, /nvm-sh\/nvm\/master\/install\.sh/);
+    assert.doesNotMatch(mac.commandOrUrl, /v0\.\d+\.\d+/);
+    assert.match(mac.commandOrUrl, /nvm install --lts/);
+    assert.match(mac.commandOrUrl, /nvm alias default ['"]lts\/\*['"]/);
+    assert.match(mac.summary, /nvm|LTS|遠端|腳本/i);
+    assert.doesNotMatch(mac.commandOrUrl, /nodejs\.org/);
+    assert.match(mac.previewCommand ?? "", /install\.sh/);
   });
 });

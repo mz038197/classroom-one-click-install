@@ -26,9 +26,20 @@ describe("buildEnvironmentInstallConfirm", () => {
   });
 
   it("mentions system installer risk for open-url plans", () => {
-    const plan = resolveEnvironmentInstallPlan("node", "darwin");
+    const plan = resolveEnvironmentInstallPlan("node", "win32", {
+      wingetAvailable: false,
+    });
     const confirm = buildEnvironmentInstallConfirm(plan, "missing");
     assert.match(confirm.detail, /安裝器|下載|nodejs\.org/i);
-    assert.match(confirm.detail, /\.pkg|LTS|管理員/i);
+    assert.match(confirm.detail, /\.msi|LTS|管理員|UAC/i);
+  });
+
+  it("reveals nvm remote script for macOS Node, not a download page", () => {
+    const plan = resolveEnvironmentInstallPlan("node", "darwin");
+    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
+    assert.match(confirm.detail, /nvm/i);
+    assert.match(confirm.detail, /install\.sh/);
+    assert.match(confirm.detail, /將執行：/);
+    assert.doesNotMatch(confirm.detail, /nodejs\.org|\.pkg/);
   });
 });

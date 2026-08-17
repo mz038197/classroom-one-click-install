@@ -1,0 +1,3 @@
+# macOS environment probe: VS Code terminal plus nvm and user bin PATH
+
+Classroom Environment Lane is **VS Code first**. Toolchain Ready must match a student's VS Code integrated terminal (`xxx --version`), including uv in `~/.local/bin` and nvm's Node, which usually live in `.zshrc` — a new probe terminal and `$SHELL -lc` often miss that. Every unix probe command (Shell Integration **and** login-shell fallback) prefixes user bins and sources `~/.nvm/nvm.sh` when present. We keep `-lc` rather than `-lic` so oh-my-zsh banners do not break first-line version parse. Cursor sideload stays compatible; it is not the design target. Refines [ADR 0005](./0005-environment-probe-path.md).

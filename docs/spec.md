@@ -136,8 +136,8 @@ actions:
 
 ### 偵測
 
-- 優先在整合終端機執行「找得到指令＋版本命令成功」才算就緒（Shell Integration）。  
-- 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑同一組版本命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；不彈警告 toast。  
+- 優先在 **VS Code** 整合終端機執行「找得到指令＋版本命令成功」才算就緒（Shell Integration）。macOS 上這組版本命令須含 nvm／使用者 bin（見 [ADR 0008](./adr/0008-macos-probe-nvm-user-path.md)），不假設終端已讀 `.zshrc`。  
+- 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑**同一組**命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；不彈警告 toast。  
 - **與是否由本擴充功能安裝無關**；學生在外部終端機裝好，重開／新開整合終端後按「重新檢查」即可顯示版本。  
 - Node 須同時驗證 `node` 與 `npm`。  
 - 細節與各 OS 指令：[研究 01](../.scratch/classroom-one-click-install/research/01-toolchain-install-win-mac.md)
@@ -151,7 +151,7 @@ actions:
 ### 安裝流程（僅環境工具）
 
 1. 確認（揭示遠端腳本／系統安裝器風險，並顯示將執行的內容或下載路徑）  
-2. 跑該 OS 預設安裝路徑（見下表）  
+2. 跑該 OS 預設安裝路徑（見下表；macOS Node 見 [ADR 0009](./adr/0009-macos-node-nvm.md)）  
 3. 狀態改為「請重開終端機」——**不要**直接標成功  
 4. 學生重開終端 → 重新檢查 → 成功才就緒  
 5. 權限／MDM 失敗：保留錯誤，提示找 IT；不提權  
@@ -159,8 +159,8 @@ actions:
 | 工具 | Windows 預設 | macOS 預設 |
 |---|---|---|
 | uv | Astral standalone PowerShell installer | Astral standalone shell installer |
-| Git | Git for Windows 官方 installer | Xcode Command Line Tools |
-| Node.js | 官網當期 LTS `.msi` | 官網當期 LTS `.pkg` |
+| Git | Git for Windows 官方 installer（有 winget 則 winget） | Xcode Command Line Tools |
+| Node.js | 有 winget 則 LTS；否則官網 `.msi` | nvm 官方安裝腳本（不釘版本）＋當時 LTS（`nvm install --lts`） |
 
 ### 與 Course Lane
 

@@ -108,9 +108,12 @@ export function resolveEnvironmentInstallPlan(
   return {
     tool,
     platform,
-    kind: "open-url",
-    commandOrUrl: "https://nodejs.org/en/download",
+    kind: "shell",
+    commandOrUrl:
+      'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash && . "$HOME/.nvm/nvm.sh" && nvm install --lts && nvm alias default \'lts/*\'',
     summary:
-      "將開啟 Node.js 官方下載頁；請選當期 LTS 的 macOS .pkg 安裝器（可能需管理員授權）。",
+      "將下載並執行 nvm 官方安裝腳本（GitHub master，不釘版本），再安裝當時的官方 LTS，並設為 nvm default。",
+    previewCommand:
+      "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | less",
   };
 }

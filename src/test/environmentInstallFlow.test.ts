@@ -122,6 +122,25 @@ describe("EnvironmentLaneService install flow", () => {
     assert.match(seenPlan?.commandOrUrl ?? "", /winget install --id Git\.Git/);
   });
 
+  it("uses nvm shell plan for Node on macOS", async () => {
+    let seenPlan: EnvironmentInstallPlan | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        platform: "darwin",
+        execute: async (plan) => {
+          seenPlan = plan;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installTool("node");
+    assert.equal(seenPlan?.kind, "shell");
+    assert.match(seenPlan?.commandOrUrl ?? "", /nvm install --lts/);
+    assert.doesNotMatch(seenPlan?.commandOrUrl ?? "", /nodejs\.org/);
+  });
+
   it("opens Git download page when winget is unavailable", async () => {
     let seenPlan: EnvironmentInstallPlan | undefined;
     const lane = new EnvironmentLaneService(

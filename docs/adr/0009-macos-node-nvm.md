@@ -1,0 +1,3 @@
+# macOS Node: nvm current LTS, not official .pkg
+
+Classroom Environment Lane is VS Code first on Windows and macOS. Opening the Node download page made Mac students pick a `.pkg` themselves, which we rejected. Official `.pkg` also needs admin; Homebrew was rejected as a classroom default. We install nvm from GitHub `master/install.sh` (unpinned), then `nvm install --lts` and `nvm alias default 'lts/*'`, so new terminals keep the current LTS line without hard-coding 24. Probe loads nvm explicitly ([ADR 0008](./0008-macos-probe-nvm-user-path.md)). This withdraws research 01’s “no version manager as classroom default” for **macOS Node only**.

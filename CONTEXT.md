@@ -25,24 +25,24 @@ _Avoid_: 巢狀 `groups`（已撤回）, 應用內建唯一清單, 多份並行�
 _Avoid_: 只實作單一 router 部署, 兩套不相容的 catalog API／YAML 形狀
 
 **Router Lane**:
-側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。本機已有 Classroom API Key（已設定）時，顯示課堂名稱（Class Label），就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart 後 Class Label 仍須與「已設定」一併還原。Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口與 Class Label。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。
-_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）, 重啟後只還原 key 卻丟課堂名稱
+側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。本機已有 Classroom API Key（已設定）時，顯示課堂名稱（Class Label），就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart 後 Class Label 仍須與「已設定」一併還原。Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口與 Class Label。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。Windows 與 macOS 同一套連線登入，不為 Mac 另加步驟。
+_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）, 重啟後只還原 key 卻丟課堂名稱, 為 macOS 另做一套連線登入
 
 **Class Label**:
 Router Lane 就緒時顯示的課堂識別文案（例如 class 名與 session 名以「·」串起）；來自兌換結果，不是 Classroom API Key 本體。須在本機已連線期間跨 Host Full Restart 仍可顯示；隨 Clear Classroom Connection 一併清除。
 _Avoid_: 把 key 當顯示名, 僅記憶體暫存、重啟後消失卻仍稱已連線完整, 側邊欄常駐顯示 key
 
 **Environment Lane**:
-側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。本期不改 macOS 路徑。
-_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, 本期一併改 mac brew／Linux
+側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。macOS 上三個 Environment Tool 皆由擴充在整合終端機發起安裝，不把學生送到下載頁自行選檔：git 為 Xcode Command Line Tools；uv 為 Astral 官方腳本；Node 以 nvm 安裝當時的官方 LTS，並把 default 指到 LTS；nvm 安裝腳本不釘版本、每次取上游當時最新。不走 Homebrew、也不開官方 .pkg。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。
+_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, Mac Node 只開官網當唯一路徑, Mac Node 預設 Homebrew 或官方 .pkg, 把 Mac nvm 釘死某一主版號（如永遠 24）, 釘死 nvm 安裝腳本的版本號, 凍結 macOS 安裝路徑, 沒有 nvm 仍要求學生先手動裝 nvm, Linux 保證
 
 **Course Lane**:
 側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。
 _Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作
 
 **Toolchain Ready**:
-uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
-_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 僅編輯器行程啟動當下 PATH
+uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。macOS 探測（主路徑與後備）須載入 nvm 與使用者本機 bin（如 `~/.local/bin`），不能只靠登入殼預設 PATH。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
+_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準
 
 **Branded Distribution**:
 同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id 與預設 `routerBaseUrl`；Install Action／三條 Lane／Router 契約不為品牌各寫一套。

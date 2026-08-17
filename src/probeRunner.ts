@@ -5,6 +5,7 @@ import type { ProbeRunner } from "./environmentLane";
 import {
   buildProbeExecEnv,
   buildProbeHostCommand,
+  environmentProbeCommands,
 } from "./probePathEnv";
 import { waitForShellIntegration } from "./terminalRunner";
 import type { EnvironmentToolId, ProbeCommandResult } from "./toolProbe";
@@ -12,7 +13,7 @@ import type { EnvironmentToolId, ProbeCommandResult } from "./toolProbe";
 const execAsync = promisify(exec);
 const ENV_CHECK_TERMINAL = "Classroom env check";
 const COMMAND_TIMEOUT_MS = 15_000;
-/** Probe waits less than install path — Cursor often never enables SI. */
+/** Probe waits less than install — SI 未就緒時改走後備，避免卡住重新檢查。 */
 const PROBE_SHELL_INTEGRATION_WAIT_MS = 2_000;
 
 async function readWindowsMachineUserPath(): Promise<string | undefined> {
@@ -147,19 +148,13 @@ async function openProbeSession(): Promise<ProbeSession | undefined> {
 }
 
 function commandsFor(tool: EnvironmentToolId): string[] {
-  if (tool === "uv") {
-    return ["uv --version"];
-  }
-  if (tool === "git") {
-    return ["git --version"];
-  }
-  return ["node --version", "npm --version"];
+  return environmentProbeCommands(tool, process.platform);
 }
 
 /**
- * 主路徑：新開整合終端探測（對齊「外部安裝 → 新終端可見 → 重新檢查」）。
+ * 主路徑：VS Code 整合終端探測（對齊「外部安裝 → 新終端可見 → 重新檢查」）。
  * 無 Shell Integration 時靜默 fallback：Windows 用 Machine+User PATH，
- * macOS/Linux 用登入殼 `-lc`（見 ADR 0005）。
+ * macOS/Linux 用登入殼 `-lc`；unix 指令已含 nvm／使用者 bin（見 ADR 0005、0008）。
  */
 export function createDefaultProbeRunner(): ProbeRunner {
   let session: ProbeSession | undefined;
