@@ -32,7 +32,6 @@ export type SidebarCourseActionVm = {
   status: ActionRunStatus;
   statusLabel: string;
   detail?: string;
-  disabledReason?: string;
   actionLabel: string;
   busy: boolean;
   canRun: boolean;
@@ -200,7 +199,6 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
     ...tipFields(course),
     actions: course.actions.map((action) => {
       const busy = action.run.status === "running";
-      const disabled = Boolean(action.disabledReason);
       return {
         id: action.id,
         title: action.title,
@@ -210,12 +208,9 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
         status: action.run.status,
         statusLabel: statusLabel(action.run),
         ...(action.run.detail ? { detail: action.run.detail } : {}),
-        ...(action.disabledReason
-          ? { disabledReason: action.disabledReason }
-          : {}),
         actionLabel: actionCommandTitle(action.run),
         busy,
-        canRun: !busy && !disabled,
+        canRun: !busy,
       };
     }),
   };

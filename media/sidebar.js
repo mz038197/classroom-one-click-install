@@ -373,7 +373,7 @@
     for (const action of vm.course.actions) {
       const disabled = !action.canRun;
       const card = el("div", {
-        className: "card" + (action.disabledReason ? " disabled" : ""),
+        className: "card",
       });
       card.appendChild(
         el(
@@ -389,10 +389,8 @@
             el("p", { className: "card-title", text: action.title }),
           ),
           el("span", {
-            className: statusClass(
-              action.disabledReason ? "warn" : action.status,
-            ),
-            text: action.disabledReason ? "已禁用" : action.statusLabel,
+            className: statusClass(action.status),
+            text: action.statusLabel,
           }),
         ),
       );
@@ -401,11 +399,7 @@
           el("p", { className: "card-desc", text: action.description }),
         );
       }
-      if (action.disabledReason) {
-        card.appendChild(
-          el("p", { className: "card-detail", text: action.disabledReason }),
-        );
-      } else if (action.detail) {
+      if (action.detail) {
         card.appendChild(
           el("p", { className: "card-detail", text: action.detail }),
         );

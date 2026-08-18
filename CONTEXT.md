@@ -5,8 +5,8 @@
 ## Language
 
 **Install Action**:
-老師策展、學生可點的一筆安裝動作；含顯示名稱、必填的 Action Kind，以及背後要執行的指令意圖（例如 `uv add` 或 `uvx`），不必然等於 PyPI 套件短名。本期不另做「下載檔案進專案」的專用動作。
-_Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（暗示只是短名）, File Asset 專用 kind
+老師策展、學生可點的一筆安裝動作；含顯示名稱、必填的 Action Kind，以及背後要執行的指令意圖（例如 `uv add` 或 `uvx`），不必然等於 PyPI 套件短名。可點與否不依 Environment Tool 是否就緒。本期不另做「下載檔案進專案」的專用動作。
+_Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（暗示只是短名）, File Asset 專用 kind, 因缺 uv／git 而禁用的動作
 
 **Action Kind**:
 標在單一 Install Action 上的封閉種類；欄位 `kind`，值為 `skill`／`package`／`mcp`（學生分別看到 tag「Skill」「套件」「MCP」）。純顯示標示：不分區、不收合、不改變啟用／執行／依賴行為。缺漏或非法值則整份 Course Catalog 載入失敗。不另增「檔案資產」kind——進專案的效果由 catalog 內既有動作（含其 `command`）完成。
@@ -33,16 +33,16 @@ Router Lane 就緒時顯示的課堂識別文案（例如 class 名與 session �
 _Avoid_: 把 key 當顯示名, 僅記憶體暫存、重啟後消失卻仍稱已連線完整, 側邊欄常駐顯示 key
 
 **Environment Lane**:
-側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列）。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。macOS 上三個 Environment Tool 皆由擴充在整合終端機發起安裝，不把學生送到下載頁自行選檔：git 為 Xcode Command Line Tools；uv 為 Astral 官方腳本；Node 以 nvm 安裝當時的官方 LTS，並把 default 指到 LTS；nvm 安裝腳本不釘版本、每次取上游當時最新。不走 Homebrew、也不開官方 .pkg。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。
-_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, Mac Node 只開官網當唯一路徑, Mac Node 預設 Homebrew 或官方 .pkg, 把 Mac nvm 釘死某一主版號（如永遠 24）, 釘死 nvm 安裝腳本的版本號, 凍結 macOS 安裝路徑, 沒有 nvm 仍要求學生先手動裝 nvm, Linux 保證
+側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列、可同時使用）。不是 Course Lane 的先決條件。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。macOS 上三個 Environment Tool 皆由擴充在整合終端機發起安裝，不把學生送到下載頁自行選檔：git 為 Xcode Command Line Tools；uv 為 Astral 官方腳本；Node 以 nvm 安裝當時的官方 LTS，並把 default 指到 LTS；nvm 安裝腳本不釘版本、每次取上游當時最新。不走 Homebrew、也不開官方 .pkg。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。
+_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, Mac Node 只開官網當唯一路徑, Mac Node 預設 Homebrew 或官方 .pkg, 把 Mac nvm 釘死某一主版號（如永遠 24）, 釘死 nvm 安裝腳本的版本號, 凍結 macOS 安裝路徑, 沒有 nvm 仍要求學生先手動裝 nvm, Linux 保證, 當作本課安裝前必須先過的關卡
 
 **Course Lane**:
-側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。
-_Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作
+側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。與 Environment Lane 可並行：Environment Tool 未就緒時，清單與單一動作仍可點；擴充不因缺工具而禁用或拒絕執行。
+_Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作, 依缺 uv／git 禁用對應動作, 三工具未齊就鎖整區
 
 **Toolchain Ready**:
-uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。macOS 探測（主路徑與後備）須載入 nvm 與使用者本機 bin（如 `~/.local/bin`），不能只靠登入殼預設 PATH。不是 Course Lane 的總開關——本課動作改依各動作所需工具是否就緒來啟用。
-_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準
+uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。macOS 探測（主路徑與後備）須載入 nvm 與使用者本機 bin（如 `~/.local/bin`），不能只靠登入殼預設 PATH。只服務 Environment Lane 的總覽／徽章；不是 Course Lane 的總開關，也不用來啟用或禁用單一 Install Action。
+_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 依各動作所需工具是否就緒來啟用本課動作, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準
 
 **Branded Distribution**:
 同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id 與預設 `routerBaseUrl`；Install Action／三條 Lane／Router 契約不為品牌各寫一套。

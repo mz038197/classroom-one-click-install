@@ -66,7 +66,7 @@
 | Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml` |
 | Router Lane／Environment Lane／Course Lane | 側邊欄三區（可各自收合；Router 最上） |
 | Invite Code／Classroom API Key／Sign-in Handoff／BYOK Setup | 見 [`CONTEXT.md`](../CONTEXT.md) |
-| Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；不是 Course Lane 總開關 |
+| Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；只服務 Environment Lane 徽章，不是 Course Lane 總開關，也不用來啟用／禁用單一 Install Action |
 
 ---
 
@@ -165,13 +165,10 @@ actions:
 ### 與 Course Lane
 
 - 「重開終端」**只**用於環境工具；本課 `uv add`／`uvx` 不要求重開。  
-- 允許循序安裝。依依賴禁用本課動作：  
-  - 缺 `uv` → 禁用 `uv`／`uvx` 開頭（或同等）的 command  
-  - 缺 `git` → 禁用含 `git+`（或明顯需 git）的 command  
-  - Node **不**鎖本課清單  
-- Toolchain Ready 可當徽章，不是總開關。  
+- 兩條 Lane **可並行**：Environment Tool 未就緒時，本課清單與單一動作仍可點、確認後仍執行；確認框與卡片不提缺工具，失敗不解析成「請去裝環境工具」。  
+- Toolchain Ready 可當徽章，不是總開關，也不用來啟用／禁用單一動作。  
 
-決策票：[04](../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md)
+決策：[ADR 0010](./adr/0010-course-lane-ungated-by-environment-tools.md)；舊票 [04](../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md) 的「依依賴禁用」已撤回。
 
 ---
 
@@ -181,7 +178,7 @@ actions:
 
 - 列出 catalog 的 `title`／`description`，並顯示 `kind` 對應的 tag（Skill／套件／MCP）  
 - 點擊 → **每次**確認框顯示完整 `command` → 確認後在工作區根目錄送進整合終端機  
-- 狀態：未執行／進行中／成功／失敗／因缺工具禁用  
+- 狀態：未執行／進行中／成功／失敗（不因缺環境工具而多一種「已禁用」）  
 - 成功後可「再執行」；失敗可「重試」  
 
 ### git+https
@@ -217,7 +214,7 @@ actions:
 必須涵蓋狀態：
 
 - 環境：版本／未安裝／請重開終端／重新檢查／重新安裝  
-- 本課：Action Kind tag、成功、進行中、失敗短提示、缺工具禁用、確認框  
+- 本課：Action Kind tag、成功、進行中、失敗短提示、確認框（卡片不因缺工具改樣式或加警告）  
 
 ### 兩大區收合
 
@@ -253,7 +250,7 @@ actions:
 2. **確認後執行**：點一本課動作會先顯示完整 `command`；取消不執行；確認後在工作區根目錄於整合終端機執行該命令。  
 3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。  
 4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。  
-5. **依依賴禁用**：僅移除／隱藏 `git`（uv 仍在）時，含 `git+` 的本課動作禁用；不要求 Node 就緒也能點純 `uv`／`uvx` 且不含 `git+` 的動作（若清單中有此類）。  
+5. **缺工具不鎖本課**：uv／git／Node 皆未就緒時，本課 `uv`／`uvx`／含 `git+` 的動作仍可點；確認框不提缺工具；確認後仍送進終端（失敗則一般失敗狀態＋終端原文）。  
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
 7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node。  
 8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口；兩大區可各自收合，預設展開。  
@@ -267,7 +264,7 @@ actions:
 | [01](../.scratch/classroom-one-click-install/issues/01-research-toolchain-install-win-mac.md) | 工具鏈安裝／偵測研究 |
 | [02](../.scratch/classroom-one-click-install/issues/02-research-vscode-terminal-sidebar-apis.md) | 終端機與側邊欄 API |
 | [03](../.scratch/classroom-one-click-install/issues/03-grilling-catalog-schema.md) | Catalog schema |
-| [04](../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md) | Environment 行為 |
+| [04](../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md) | Environment 行為（Course Lane「依依賴禁用」已由 [ADR 0010](./adr/0010-course-lane-ungated-by-environment-tools.md) 撤回） |
 | [05](../.scratch/classroom-one-click-install/issues/05-grilling-trust-boundary.md) | 信任邊界 |
 | [06](../.scratch/classroom-one-click-install/issues/06-grilling-git-https-auth.md) | git+https 假設 |
 | [07](../.scratch/classroom-one-click-install/issues/07-prototype-sidebar-ia.md) | 側邊欄 IA |

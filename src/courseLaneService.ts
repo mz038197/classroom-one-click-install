@@ -1,9 +1,5 @@
 import * as vscode from "vscode";
 import { ActionRunStateStore } from "./actionRunState";
-import {
-  disabledReasonForAction,
-  type ToolReadiness,
-} from "./actionDependencyGate";
 import { confirmThenRun } from "./confirmThenRun";
 import { type InstallAction } from "./courseCatalog";
 import { loadCourseCatalog } from "./courseCatalogLoad";
@@ -19,14 +15,10 @@ export {
   type CourseLaneView,
 } from "./courseLaneTypes";
 
-export type ReadinessProvider = () => ToolReadiness;
-
 export type CourseLaneRemoteDeps = {
   getApiKey: () => Promise<string | undefined>;
   fetchRemoteYaml: (apiKey: string) => Promise<string>;
 };
-
-const ALL_READY: ToolReadiness = { uv: true, git: true, node: true };
 
 export class CourseLaneService {
   private readonly store = new ActionRunStateStore();
@@ -39,10 +31,7 @@ export class CourseLaneService {
   private readonly onDidChangeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.onDidChangeEmitter.event;
 
-  constructor(
-    private readonly readiness: ReadinessProvider = () => ALL_READY,
-    private readonly remote?: CourseLaneRemoteDeps,
-  ) {}
+  constructor(private readonly remote?: CourseLaneRemoteDeps) {}
 
   getView(): CourseLaneView {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -65,18 +54,13 @@ export class CourseLaneService {
         ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
       };
     }
-    const tools = this.readiness();
     return {
       kind: "ready",
       workspaceRoot: this.workspaceRoot ?? folder.uri.fsPath,
-      actions: this.actions.map((action) => {
-        const disabledReason = disabledReasonForAction(action.command, tools);
-        return {
-          ...action,
-          run: this.store.get(action.id),
-          ...(disabledReason ? { disabledReason } : {}),
-        };
-      }),
+      actions: this.actions.map((action) => ({
+        ...action,
+        run: this.store.get(action.id),
+      })),
       ...(this.tip ? { tip: this.tip } : {}),
       ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
       ...(this.source ? { source: this.source } : {}),
@@ -142,11 +126,6 @@ export class CourseLaneService {
       return;
     }
     if (this.store.get(actionId).status === "running") {
-      return;
-    }
-    const disabledReason = disabledReasonForAction(action.command, this.readiness());
-    if (disabledReason) {
-      void vscode.window.showWarningMessage(disabledReason);
       return;
     }
 

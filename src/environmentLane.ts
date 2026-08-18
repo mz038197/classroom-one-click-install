@@ -1,4 +1,3 @@
-import type { ToolReadiness } from "./actionDependencyGate";
 import { buildEnvironmentInstallConfirm } from "./environmentInstallConfirm";
 import {
   resolveEnvironmentInstallPlan,
@@ -151,15 +150,6 @@ export class EnvironmentLaneService {
 
   getView(): EnvironmentLaneView {
     return buildEnvironmentLaneView(this.statuses, this.overlays);
-  }
-
-  getReadiness(): ToolReadiness {
-    const view = this.getView();
-    return {
-      uv: view.tools.find((t) => t.id === "uv")?.status === "ready",
-      git: view.tools.find((t) => t.id === "git")?.status === "ready",
-      node: view.tools.find((t) => t.id === "node")?.status === "ready",
-    };
   }
 
   async recheck(): Promise<void> {

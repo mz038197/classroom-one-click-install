@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   const portalClient = createRouterPortalClient(baseUrl);
 
-  const courseLane = new CourseLaneService(() => environmentLane.getReadiness(), {
+  const courseLane = new CourseLaneService({
     getApiKey: async () => context.secrets.get(API_KEY_SECRET),
     fetchRemoteYaml: (apiKey) => portalClient.fetchCourseCatalogYaml(apiKey),
   });

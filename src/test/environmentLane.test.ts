@@ -75,7 +75,7 @@ describe("EnvironmentLaneService", () => {
     assert.equal(lane.getView().toolchainReady, true);
   });
 
-  it("exposes readiness flags for Course Lane gating without locking on Node", async () => {
+  it("does not mark Toolchain Ready when only Node is missing", async () => {
     const probe: ProbeRunner = async (tool) => {
       if (tool === "node") {
         return { exitCode: 1, stdout: "" };
@@ -87,11 +87,10 @@ describe("EnvironmentLaneService", () => {
     };
     const lane = new EnvironmentLaneService(probe);
     await lane.recheck();
-    assert.deepEqual(lane.getReadiness(), {
-      uv: true,
-      git: true,
-      node: false,
-    });
-    assert.equal(lane.getView().toolchainReady, false);
+    const view = lane.getView();
+    assert.equal(view.tools.find((t) => t.id === "uv")?.status, "ready");
+    assert.equal(view.tools.find((t) => t.id === "git")?.status, "ready");
+    assert.equal(view.tools.find((t) => t.id === "node")?.status, "missing");
+    assert.equal(view.toolchainReady, false);
   });
 });

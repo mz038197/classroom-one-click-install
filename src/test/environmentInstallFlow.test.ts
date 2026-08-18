@@ -48,7 +48,6 @@ describe("EnvironmentLaneService install flow", () => {
     const uv = lane.getView().tools.find((t) => t.id === "uv");
     assert.equal(uv?.status, "needs-reopen-terminal");
     assert.match(uv?.detail ?? "", /重開終端/);
-    assert.equal(lane.getReadiness().uv, false);
   });
 
   it("becomes ready only after recheck succeeds", async () => {
@@ -193,6 +192,5 @@ describe("EnvironmentLaneService install flow", () => {
       lane.getView().tools.find((t) => t.id === "uv")?.status,
       "needs-reopen-terminal",
     );
-    assert.equal(lane.getReadiness().uv, false);
   });
 });

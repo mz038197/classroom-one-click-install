@@ -5,7 +5,6 @@ export const CATALOG_FILENAME = "classroom-installs.yaml";
 
 export type CourseLaneActionView = InstallAction & {
   run: ActionRunSnapshot;
-  disabledReason?: string;
 };
 
 export type CourseLaneView =

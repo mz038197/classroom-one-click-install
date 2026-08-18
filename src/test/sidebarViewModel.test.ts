@@ -132,7 +132,7 @@ describe("buildSidebarViewModel", () => {
     );
   });
 
-  it("surfaces disabled reason and does not offer a run label action", () => {
+  it("lets idle course actions run when the command needs uv or git", () => {
     const course: CourseLaneView = {
       kind: "ready",
       workspaceRoot: "/tmp/demo",
@@ -143,7 +143,6 @@ describe("buildSidebarViewModel", () => {
           kind: "package",
           command: "uv add git+https://example.com/x.git",
           run: { status: "idle" },
-          disabledReason: "需要 git",
         },
       ],
     };
@@ -155,9 +154,8 @@ describe("buildSidebarViewModel", () => {
       course,
     });
 
-    assert.equal(vm.course.actions[0]?.disabledReason, "需要 git");
     assert.equal(vm.course.actions[0]?.busy, false);
-    assert.equal(vm.course.actions[0]?.canRun, false);
+    assert.equal(vm.course.actions[0]?.canRun, true);
   });
 
   it("maps course empty states to a clear message", () => {
