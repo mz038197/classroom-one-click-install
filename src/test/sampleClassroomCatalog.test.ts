@@ -27,6 +27,7 @@ describe("samples/classroom-installs.yaml", () => {
         { id: "peas-agent-runtime", kind: "package" },
         { id: "dataset-streamlit-shell", kind: "package" },
         { id: "add-shell-agent", kind: "package" },
+        { id: "add-vans-mcp", kind: "mcp" },
         { id: "mattpocock-skills", kind: "skill" },
       ],
     );

@@ -120,6 +120,13 @@ actions:
     command: >-
       uvx --from git+https://github.com/mz038197/dataset-streamlit-shell-installer.git add-dataset-streamlit-shell --update
 
+  - id: add-vans-mcp
+    title: 安裝課堂 MCP
+    kind: mcp
+    description: 把 vans-mcp 寫進工作區 .vscode/mcp.json（第一次用時再貼 Classroom API Key）
+    command: >-
+      uvx --from git+https://github.com/mz038197/peas-agent-mcp.git@master#subdirectory=vans-mcp add-vans-mcp
+
   - id: mattpocock-skills
     title: 安裝 Matt Pocock skills
     kind: skill

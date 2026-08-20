@@ -9,8 +9,8 @@
 _Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（暗示只是短名）, File Asset 專用 kind, 因缺 uv／git 而禁用的動作
 
 **Action Kind**:
-標在單一 Install Action 上的封閉種類；欄位 `kind`，值為 `skill`／`package`／`mcp`（學生分別看到 tag「Skill」「套件」「MCP」）。純顯示標示：不分區、不收合、不改變啟用／執行／依賴行為。缺漏或非法值則整份 Course Catalog 載入失敗。不另增「檔案資產」kind——進專案的效果由 catalog 內既有動作（含其 `command`）完成。
-_Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單獨當領域詞或第四種 kind）, 開放任意字串 kind, 用 kind 驅動安裝邏輯, `asset`／`files`／`material` 當新 kind
+標在單一 Install Action 上的封閉種類；欄位 `kind`，值為 `skill`／`package`／`mcp`（學生分別看到 tag「Skill」「套件」「MCP」）。純顯示標示：不分區、不收合、不改變啟用／執行／依賴行為。缺漏或非法值則整份 Course Catalog 載入失敗。不另增「檔案資產」kind——進專案的效果由 catalog 內既有動作（含其 `command`）完成。寫入 Workspace MCP Config 是某一筆 `command` 的事，不是因為 `kind` 為 `mcp`。
+_Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單獨當領域詞或第四種 kind）, 開放任意字串 kind, 用 kind 驅動安裝邏輯, 用 kind:mcp 寫 .vscode/mcp.json, `asset`／`files`／`material` 當新 kind
 
 **Environment Tool**:
 機器層級、固定清單的工具鏈成員（目前：uv、git、Node.js）；用來讓本課安裝動作跑得起來。
@@ -38,7 +38,7 @@ _Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍�
 
 **Course Lane**:
 側邊欄中列出 Course Catalog 並觸發 Install Action 的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane。與 Environment Lane 可並行：Environment Tool 未就緒時，清單與單一動作仍可點；擴充不因缺工具而禁用或拒絕執行。
-_Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作, 依缺 uv／git 禁用對應動作, 三工具未齊就鎖整區
+_Avoid_: 把安裝清單 UI 併進課堂連線區, 連線成功後自動跑完所有動作, 依缺 uv／git 禁用對應動作, 三工具未齊就鎖整區, 為寫 Workspace MCP Config 而注入 Classroom API Key, 缺 Classroom API Key 就禁用本課動作
 
 **Toolchain Ready**:
 uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（找得到指令且版本命令成功）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關。macOS 探測（主路徑與後備）須載入 nvm 與使用者本機 bin（如 `~/.local/bin`），不能只靠登入殼預設 PATH。只服務 Environment Lane 的總覽／徽章；不是 Course Lane 的總開關，也不用來啟用或禁用單一 Install Action。
@@ -61,24 +61,28 @@ _Avoid_: 從市集安裝, 本機開發 Host（F5）當課堂安裝
 _Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把擴充輸入框本身當成新的匿名兌換破口
 
 **Classroom API Key**:
-兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它（Host secret、固定 hex id、覆寫同一格）；換新邀請碼時再跑一次流程並覆寫。本機不會隨課堂結束自動刪除。側邊欄不渲染 key 本體明文。
-_Avoid_: Portal session, Google token, upstream provider key, 在 Webview 常駐或展開顯示完整 `vcr_sk_…`
+兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它（Host secret、固定 hex id、覆寫同一格）；換新邀請碼時再跑一次流程並覆寫。本機不會隨課堂結束自動刪除。側邊欄與本課確認框不渲染 key 本體明文。Workspace MCP Config 不寫入此 key；學生第一次啟動該 MCP 時由編輯器以 input variable 詢問，可先用 Copy Classroom API Key 再貼。
+_Avoid_: Portal session, Google token, upstream provider key, 在 Webview 常駐或展開顯示完整 `vcr_sk_…`, 把 key 寫進確認框或 command 字串, 把明文 key 寫進 chatLanguageModels.json 的 apiKey, 把明文 Bearer 寫進 .vscode/mcp.json
 
 **Copy Classroom API Key**:
 學生在本機已有 Classroom API Key（Router Lane 為已設定）時，於該區已顯示的「Classroom API Key」文案右側點「複製」icon，把 key 寫入系統剪貼簿；供貼到 Portal、其他工具或除錯協助。不在 UI 渲染 key 本體；不另做獨立長文案按鈕或命令面板唯一入口。成功回饋為一則短訊（已複製＋勿分享給不信任的人）；失敗同為短句且不回顯 key。凡思與 Pegasi、VS Code 與 Cursor 行為相同。該控制位於 Clear Classroom Connection 之上；清除後入口隨已設定狀態消失；不嘗試清空系統剪貼簿。
 _Avoid_: 複製 Sign-in Handoff, 複製 Invite Code, 僅兌換成功當下可複製之後不可再拿, 靠畫面選取明文再複製, 側邊欄展開或常駐顯示完整 key, 命令面板為唯一入口, 只在單一 Host 或單一 Branded Distribution 提供, 每次複製前強制確認對話框, 清除連線時清空剪貼簿, 另做與「Classroom API Key」文案脫節的第二顆主按鈕當唯一複製入口
 
 **Clear Classroom Connection**:
-學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，清除本機保存的 Class Label，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter）。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
-_Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked, 清除連線後仍留下 Class Label
+學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，清除本機保存的 Class Label，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter），也不刪 Workspace MCP Config。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
+_Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked, 清除連線後仍留下 Class Label, 清除連線時刪掉 .vscode/mcp.json
 
 **Sign-in Handoff**:
 瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。
 _Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失敗就只能改走 Portal
 
+**Workspace MCP Config**:
+工作區 `.vscode/mcp.json` 裡由本課安裝寫入的課堂 MCP（server 名 `vans-mcp`）。Authorization 使用 VS Code input variable（`${input:vcr_api_key}` 加上對應 `inputs`），檔內不含 Classroom API Key 明文。只保證 VS Code。與 Action Kind `mcp`（純顯示 tag）不是同一件事，也不是 Python 客戶端的 `peas-mcp.json`。清連線不刪；已有檔則只更新 `vans-mcp` 與該 input。不含密件，不必為此 gitignore。
+_Avoid_: 登入／BYOK 後自動寫 MCP, user 層 mcp.json 當本課安裝結果, 用 kind:mcp 驅動寫檔, 把 peas-mcp.json 當成編輯器 MCP, 整份覆寫學生其他 MCP server, 在 Cursor 保證一鍵連上, 明文 Bearer 寫進 mcp.json, 把無密件的 mcp.json 當機密列入 gitignore, 為寫此檔而注入終端機環境變數
+
 **BYOK Setup**:
-把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。僅支援 VS Code；Cursor 不自動寫入，改提示 Portal／手動。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。
-_Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret
+把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。僅支援 VS Code；Cursor 不自動寫入，改提示 Portal／手動。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。不含 Workspace MCP Config。
+_Avoid_: 下載並執行 install-vscode-models.cmd（那是 Portal 備援路徑）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret, 兌換成功後順便寫 .vscode/mcp.json
 
 **Host Full Restart**:
 完整退出目前 Host 並自動再開同一 Host，使 Host secret／pending BYOK 等需進程重生才穩定的狀態生效；亦用於 Clear Classroom Connection 因本機忙碌失敗後、再試清除之前。學生可見動作為「重新啟動」。硬承諾：按下後必須回來，不可只關不開卻仍稱重啟。
