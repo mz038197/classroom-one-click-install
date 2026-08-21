@@ -41,3 +41,12 @@ actions:
     description: 以 npx 加入 mattpocock/skills
     command: >-
       npx skills@latest add mattpocock/skills
+
+# 本課片段（選填）：學生複製後自行貼進專案檔
+snippets:
+  - id: mcp-client-stub
+    title: MCP 客戶端骨架
+    paste_hint: mcp_client.py
+    body: |
+      def call_tool(name, args):
+          ...

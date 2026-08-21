@@ -1,5 +1,5 @@
 import type { ActionRunSnapshot } from "./actionRunState";
-import type { InstallAction } from "./courseCatalog";
+import type { InstallAction, LessonSnippet } from "./courseCatalog";
 
 export const CATALOG_FILENAME = "classroom-installs.yaml";
 
@@ -28,4 +28,5 @@ export type CourseLaneView =
       tip?: string;
       canRetryRemote?: boolean;
       source?: "session" | "workspace";
+      snippets?: LessonSnippet[];
     };

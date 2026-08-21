@@ -76,6 +76,22 @@ export type SidebarViewModel = {
     catalogSource?: "session" | "workspace";
     actions: SidebarCourseActionVm[];
   };
+  snippets: {
+    visible: boolean;
+    title: string;
+    copyLabel: string;
+    items: SidebarSnippetVm[];
+  };
+};
+
+export type SidebarSnippetVm = {
+  id: string;
+  index: number;
+  title: string;
+  pasteHintLabel?: string;
+  preview: string;
+  body: string;
+  expandable: boolean;
 };
 
 export type BuildSidebarViewModelInput = {
@@ -134,6 +150,7 @@ export function buildSidebarViewModel(
       }),
     },
     course: buildCourseSection(input.course),
+    snippets: buildSnippetSection(input.course),
   };
 }
 
@@ -213,6 +230,45 @@ function buildCourseSection(course: CourseLaneView): SidebarViewModel["course"] 
         canRun: !busy,
       };
     }),
+  };
+}
+
+const SNIPPET_PREVIEW_LINES = 4;
+
+function buildSnippetSection(course: CourseLaneView): SidebarViewModel["snippets"] {
+  const items =
+    course.kind === "ready"
+      ? (course.snippets ?? []).map((snippet, index) => {
+          const { preview, expandable } = snippetPreview(snippet.body);
+          return {
+            id: snippet.id,
+            index: index + 1,
+            title: snippet.title,
+            ...(snippet.pasteHint
+              ? { pasteHintLabel: `貼進 ${snippet.pasteHint}` }
+              : {}),
+            preview,
+            body: snippet.body,
+            expandable,
+          };
+        })
+      : [];
+  return {
+    visible: items.length > 0,
+    title: "本課片段",
+    copyLabel: "複製",
+    items,
+  };
+}
+
+function snippetPreview(body: string): { preview: string; expandable: boolean } {
+  const lines = body.split("\n");
+  if (lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+  return {
+    preview: lines.slice(0, SNIPPET_PREVIEW_LINES).join("\n"),
+    expandable: lines.length > SNIPPET_PREVIEW_LINES,
   };
 }
 

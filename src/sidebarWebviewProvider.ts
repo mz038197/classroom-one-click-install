@@ -20,7 +20,8 @@ type WebviewInbound =
   | { type: "routerClear" }
   | { type: "routerCopyApiKey" }
   | { type: "routerHandoffPaste"; raw: string }
-  | { type: "retryRemoteCatalog" };
+  | { type: "retryRemoteCatalog" }
+  | { type: "copySnippet"; snippetId: string };
 
 export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = VIEW_TYPE;
@@ -42,6 +43,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       routerCopyApiKey: () => Promise<void>;
       routerHandoffPaste: (raw: string) => Promise<void>;
       retryRemoteCatalog: () => Promise<void>;
+      copySnippet: (snippetId: string) => Promise<void>;
     },
   ) {}
 
@@ -130,6 +132,11 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
         return;
       case "retryRemoteCatalog":
         await this.handlers.retryRemoteCatalog();
+        return;
+      case "copySnippet":
+        if (typeof msg.snippetId === "string" && msg.snippetId.trim()) {
+          await this.handlers.copySnippet(msg.snippetId.trim());
+        }
         return;
       default:
         return;

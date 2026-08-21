@@ -18,8 +18,15 @@ export type InstallAction = {
   description?: string;
 };
 
+export type LessonSnippet = {
+  id: string;
+  title: string;
+  body: string;
+  pasteHint?: string;
+};
+
 export type ParseCourseCatalogResult =
-  | { ok: true; actions: InstallAction[] }
+  | { ok: true; actions: InstallAction[]; snippets: LessonSnippet[] }
   | { ok: false; error: string };
 
 function isNonEmptyString(value: unknown): value is string {
@@ -92,5 +99,67 @@ export function parseCourseCatalog(source: string): ParseCourseCatalogResult {
     actions.push(action);
   }
 
-  return { ok: true, actions };
+  const snippetsResult = parseSnippets((doc as { snippets?: unknown }).snippets);
+  if (!snippetsResult.ok) {
+    return snippetsResult;
+  }
+
+  return { ok: true, actions, snippets: snippetsResult.snippets };
+}
+
+function parseSnippets(
+  snippetsRaw: unknown,
+): { ok: true; snippets: LessonSnippet[] } | { ok: false; error: string } {
+  if (snippetsRaw === undefined || snippetsRaw === null) {
+    return { ok: true, snippets: [] };
+  }
+  if (!Array.isArray(snippetsRaw)) {
+    return { ok: false, error: "頂層鍵 snippets 若提供須為陣列" };
+  }
+
+  const snippets: LessonSnippet[] = [];
+  const seenIds = new Set<string>();
+  for (let i = 0; i < snippetsRaw.length; i++) {
+    const row = snippetsRaw[i];
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return { ok: false, error: `snippets[${i}] 必須是物件` };
+    }
+    const { id, title, body, paste_hint: pasteHintRaw } = row as Record<
+      string,
+      unknown
+    >;
+    if (!isNonEmptyString(id) || !isNonEmptyString(title)) {
+      return {
+        ok: false,
+        error: `snippets[${i}] 缺少必填欄位 id／title／body`,
+      };
+    }
+    if (typeof body !== "string" || body.length === 0) {
+      return {
+        ok: false,
+        error: `snippets[${i}] 缺少必填欄位 id／title／body`,
+      };
+    }
+    const snippetId = id.trim();
+    if (seenIds.has(snippetId)) {
+      return { ok: false, error: `snippets 內 id 重複：${snippetId}` };
+    }
+    seenIds.add(snippetId);
+    const snippet: LessonSnippet = {
+      id: snippetId,
+      title: title.trim(),
+      body,
+    };
+    if (pasteHintRaw !== undefined) {
+      if (!isNonEmptyString(pasteHintRaw)) {
+        return {
+          ok: false,
+          error: `snippets[${i}].paste_hint 若提供須為非空字串`,
+        };
+      }
+      snippet.pasteHint = pasteHintRaw.trim();
+    }
+    snippets.push(snippet);
+  }
+  return { ok: true, snippets };
 }

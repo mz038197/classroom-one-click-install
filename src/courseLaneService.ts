@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ActionRunStateStore } from "./actionRunState";
 import { confirmThenRun } from "./confirmThenRun";
-import { type InstallAction } from "./courseCatalog";
+import { type InstallAction, type LessonSnippet } from "./courseCatalog";
 import { loadCourseCatalog } from "./courseCatalogLoad";
 import {
   CATALOG_FILENAME,
@@ -23,6 +23,7 @@ export type CourseLaneRemoteDeps = {
 export class CourseLaneService {
   private readonly store = new ActionRunStateStore();
   private actions: InstallAction[] = [];
+  private snippets: LessonSnippet[] = [];
   private workspaceRoot: string | undefined;
   private loadError: { kind: "missing" | "invalid"; message: string } | undefined;
   private tip: string | undefined;
@@ -64,6 +65,7 @@ export class CourseLaneService {
       ...(this.tip ? { tip: this.tip } : {}),
       ...(this.canRetryRemote ? { canRetryRemote: true } : {}),
       ...(this.source ? { source: this.source } : {}),
+      snippets: this.snippets,
     };
   }
 
@@ -71,6 +73,7 @@ export class CourseLaneService {
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder) {
       this.actions = [];
+      this.snippets = [];
       this.workspaceRoot = undefined;
       this.loadError = undefined;
       this.tip = undefined;
@@ -102,6 +105,7 @@ export class CourseLaneService {
 
     if (!result.ok) {
       this.actions = [];
+      this.snippets = [];
       this.loadError = { kind: result.kind, message: result.message };
       this.tip = result.tip;
       this.canRetryRemote = result.canRetryRemote;
@@ -111,11 +115,16 @@ export class CourseLaneService {
     }
 
     this.actions = result.actions;
+    this.snippets = result.snippets;
     this.loadError = undefined;
     this.tip = result.tip;
     this.canRetryRemote = result.canRetryRemote;
     this.source = result.source;
     this.onDidChangeEmitter.fire();
+  }
+
+  getSnippets(): readonly LessonSnippet[] {
+    return this.snippets;
   }
 
   async runAction(actionId: string): Promise<void> {

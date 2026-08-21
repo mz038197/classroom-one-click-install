@@ -68,4 +68,25 @@ describe("loadCourseCatalog", () => {
     assert.equal(result.source, "workspace");
     assert.equal(result.canRetryRemote, true);
   });
+
+  it("loads snippets from session catalog together with actions", async () => {
+    const result = await loadCourseCatalog({
+      apiKey: "vcr_sk_x",
+      fetchRemoteYaml: async () => `
+actions: []
+snippets:
+  - id: stub
+    title: 骨架
+    body: "print(1)\\n"
+`,
+      readWorkspaceYaml: async () => ONE,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.source, "session");
+    assert.equal(result.actions.length, 0);
+    assert.equal(result.snippets.length, 1);
+    assert.equal(result.snippets[0]?.id, "stub");
+    assert.equal(result.snippets[0]?.body, "print(1)\n");
+  });
 });

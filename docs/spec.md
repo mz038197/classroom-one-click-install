@@ -14,8 +14,9 @@
 
 1. **Environment Lane**：檢查／安裝固定環境工具（uv、git、Node.js）  
 2. **Course Lane**：一鍵執行本課 Install Action（清單優先來自所連 Router 的 Session Catalog；失敗時 fallback 工作區 `classroom-installs.yaml`）  
+3. **Snippet Lane**：複製本課 Lesson Snippet（起步程式）到剪貼簿，學生自行貼進專案檔  
 
-指令在**整合終端機**執行；側邊欄同步進行中／成功／失敗。  
+指令在**整合終端機**執行；側邊欄同步進行中／成功／失敗。本課片段只複製、不執行。  
 目標使用者：課堂學生（操作）、老師（維護 catalog；VS Code 學生走市集，必要時發 VSIX 備援）。
 
 ---
@@ -24,10 +25,11 @@
 
 ### 範圍（MVP）
 
-- VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course）  
+- VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course，有片段時再加 Snippet Lane）  
 - Router Lane：須先輸入 Invite Code 才能「連線登入」→ 瀏覽器 Google → Sign-in Handoff（深連結成功則自動兌換；失敗才露出貼碼與「貼上並完成連線」）→ Classroom API Key → BYOK Setup（向 router 拉模型清單、寫入**目前 Host**）。見 [ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：載入 Session／本機 Course Catalog，執行其中的整段 `command`  
+- 本課片段：同一份 Catalog 的 `snippets`，側欄複製完整 `body`（不執行、不寫檔）  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
 - 發佈：VS Code 以 **Visual Studio Marketplace** 為主（`vans-coding.vans-classroom-install`）；**VSIX 側載**為備援（Cursor／離線／急救）。不上架 Open VSX。見 [ADR 0002](./adr/0002-vs-marketplace-publish.md)。
 
@@ -41,6 +43,8 @@
 - 私有 git 認證、SSH 改寫、`gh auth` 產品內引導  
 - 學生在擴充功能內輸入自訂 **shell 命令**（邀請碼輸入除外）  
 - 多份並行 Course Catalog；File Asset／新 Action Kind 一鍵下載進專案  
+- 本課片段插入游標／依路徑寫檔；依進度解鎖或老師即時推送  
+- `pegasi_router` 的 `snippets` 存檔 round-trip（本期只改 `vans_coding_router`；Pegasi 老師寫入的片段存檔仍會被默刪）  
 - redeem rate limit 等 router 加固（另案）  
 - 以 Portal 網頁兌換／下載 install 腳本為課堂主路徑（改為備援）  
 
@@ -61,10 +65,11 @@
 | 用語 | 意義 |
 |---|---|
 | Install Action | 老師策展、學生可點的一筆安裝動作（顯示名＋kind＋命令） |
-| Action Kind | `skill`／`package`／`mcp`（純顯示 tag） |
+| Lesson Snippet | 老師策展、學生可複製的起步程式（`id`／`title`／`body`，選填 `paste_hint`） |
+| Action Kind | `skill`／`package`／`mcp`（純顯示 tag）；不是 snippet |
 | Environment Tool | uv／git／Node.js |
-| Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml` |
-| Router Lane／Environment Lane／Course Lane | 側邊欄三區（可各自收合；Router 最上） |
+| Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml`（`actions`＋選填 `snippets`） |
+| Router Lane／Environment Lane／Course Lane／Snippet Lane | 側邊欄各區（Snippet Lane 無片段時不出現） |
 | Invite Code／Classroom API Key／Sign-in Handoff／BYOK Setup | 見 [`CONTEXT.md`](../CONTEXT.md) |
 | Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；只服務 Environment Lane 徽章，不是 Course Lane 總開關，也不用來啟用／禁用單一 Install Action |
 
@@ -82,7 +87,9 @@
 
 ### Schema
 
-頂層鍵 `actions`（陣列）。每筆：
+頂層鍵 `actions`（陣列，必填）與 `snippets`（陣列，可缺或 `[]`）。`snippets` 形狀非法或 id 重複 → 整份 catalog 載入失敗。見 [ADR 0012](./adr/0012-lesson-snippet-copy-lane.md)。
+
+每筆 Install Action：
 
 | 欄位 | 必填 | 說明 |
 |---|---|---|
@@ -95,6 +102,18 @@
 - 執行目錄：一律工作區根目錄  
 - 表達方式：以整段 `command` 為準（非結構化拆欄位組命令）  
 - `kind` **純顯示**：不分區、不收合、不改變啟用／執行／依賴行為；缺漏或非法值 → 整份 catalog 載入失敗  
+
+每筆 Lesson Snippet：
+
+| 欄位 | 必填 | 說明 |
+|---|---|---|
+| `id` | 是 | 穩定識別（複製對應用）；同一 `snippets` 內不可重複 |
+| `title` | 是 | 側邊欄顯示名稱 |
+| `body` | 是 | 複製到剪貼簿的全文；原樣保留，不 trim |
+| `paste_hint` | 否 | 顯示「貼進 …」，不寫檔 |
+
+- 缺 `snippets` 或 `snippets: []` 都不是錯誤（Snippet Lane 不出現）  
+- `body` 不是 `command`，擴充不執行  
 
 ### 範例
 
@@ -133,6 +152,14 @@ actions:
     description: 以 npx 加入 mattpocock/skills
     command: >-
       npx skills@latest add mattpocock/skills
+
+snippets:
+  - id: mcp-client-stub
+    title: MCP 客戶端骨架
+    paste_hint: mcp_client.py
+    body: |
+      def call_tool(name, args):
+          ...
 ```
 
 決策票：[03](../.scratch/classroom-one-click-install/issues/03-grilling-catalog-schema.md)
@@ -204,13 +231,14 @@ actions:
 可執行來源僅：
 
 1. Environment Lane 固定偵測／官方預設安裝流程  
-2. 工作區 `classroom-installs.yaml` 內的 `command`  
+2. 工作區／Session Catalog 內 Install Action 的 `command`  
 
 其餘：
 
 - **不做** command 前綴白名單、**不做** git host 允許清單（信任教材工作區＋確認框）  
 - **不提供**學生自訂命令輸入  
 - 打開不可信工作區時，點本課動作等同同意執行該 YAML  
+- Lesson Snippet 的 `body` 只進剪貼簿，不執行；複製不跳確認框（與 command 不同）  
 
 決策票：[05](../.scratch/classroom-one-click-install/issues/05-grilling-trust-boundary.md)
 
@@ -218,18 +246,19 @@ actions:
 
 ## 8. UI／側邊欄 IA
 
-採用原型**變體 A**：環境工具在上、本課安裝在下。
+採用原型**變體 A**：環境工具在上、本課安裝在下；有 Lesson Snippet 時第四區「本課片段」在本課安裝之下（無片段則整區不出現）。
 
 必須涵蓋狀態：
 
 - 環境：版本／未安裝／請重開終端／重新檢查／重新安裝  
 - 本課：Action Kind tag、成功、進行中、失敗短提示、確認框（卡片不因缺工具改樣式或加警告）  
+- 本課片段：編號、title、選填 paste_hint、約四行預覽、可展開全文（手風琴）、複製完整 body  
 
-### 兩大區收合
+### 收合
 
-- **環境工具**與**本課安裝**兩區各自可收合／展開  
-- 預設：兩區都展開  
-- 收合狀態只記在本次 webview session；腳本／webview 完整重載後回到兩區展開  
+- **環境工具**、**本課安裝**、**本課片段**各自可收合／展開  
+- 預設：各區都展開  
+- 收合狀態只記在本次 webview session；腳本／webview 完整重載後回到展開  
 - 不做依 Action Kind 的子區收合（Course Lane 維持扁平清單）  
 
 草圖：[prototypes/07-sidebar-ia.md](../.scratch/classroom-one-click-install/prototypes/07-sidebar-ia.md)  
@@ -263,6 +292,7 @@ actions:
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
 7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node。  
 8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口；兩大區可各自收合，預設展開。  
+9. **本課片段**：Catalog 含合法 `snippets` 時，本課安裝下方出現「本課片段」；點複製把完整 `body` 寫入剪貼簿且不跳確認；無片段時整區不出現。非法 `snippets` 整份 Catalog 失敗。  
 
 ---
 
@@ -281,3 +311,4 @@ actions:
 | [09](../.scratch/classroom-one-click-install/issues/09-task-write-spec.md) | 撰寫本規格 |
 | [10](../.scratch/classroom-one-click-install/issues/10-grilling-marketplace-publish.md) | 市集發佈策略 |
 | [11](../.scratch/classroom-one-click-install/issues/11-grilling-macos-false-missing-install.md) | 假未安裝與 already-installed（[ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)） |
+| — | 本課片段第四區（[ADR 0012](./adr/0012-lesson-snippet-copy-lane.md)） |

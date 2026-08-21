@@ -11,7 +11,10 @@
     router: false,
     environment: false,
     course: false,
+    snippets: false,
   };
+  /** Accordion: only one Lesson Snippet is expanded at a time. */
+  let expandedSnippetId = null;
 
   window.addEventListener("message", (event) => {
     const msg = event.data;
@@ -116,7 +119,7 @@
   }
 
   /**
-   * @param {"router" | "environment" | "course"} laneId
+   * @param {"router" | "environment" | "course" | "snippets"} laneId
    * @param {string} title
    * @param {HTMLElement | null} trailing
    */
@@ -428,6 +431,78 @@
         courseBody,
       ),
     );
+
+    const snippets = vm.snippets || { visible: false, items: [] };
+    if (snippets.visible && snippets.items.length) {
+      if (
+        expandedSnippetId &&
+        !snippets.items.some((row) => row.id === expandedSnippetId)
+      ) {
+        expandedSnippetId = null;
+      }
+      const snippetHead = laneHeader("snippets", snippets.title || "本課片段", null);
+      const snippetBody = el("div", { className: "lane-body" });
+      for (const snippet of snippets.items) {
+        const expanded = expandedSnippetId === snippet.id;
+        const card = el("div", { className: "card" });
+        card.appendChild(
+          el(
+            "div",
+            { className: "card-title-row" },
+            el("span", {
+              className: "snippet-index",
+              text: String(snippet.index) + ".",
+            }),
+            el("p", { className: "card-title", text: snippet.title }),
+          ),
+        );
+        if (snippet.pasteHintLabel) {
+          card.appendChild(
+            el("p", { className: "card-desc", text: snippet.pasteHintLabel }),
+          );
+        }
+        card.appendChild(
+          el("pre", {
+            className: "snippet-pre",
+            text: expanded ? snippet.body : snippet.preview,
+          }),
+        );
+        const actions = el("div", { className: "row-actions" });
+        if (snippet.expandable) {
+          const toggle = el("button", {
+            className: "secondary",
+            type: "button",
+            text: expanded ? "收合" : "展開",
+            onclick: () => {
+              expandedSnippetId = expanded ? null : snippet.id;
+              render(vm);
+            },
+          });
+          actions.appendChild(toggle);
+        }
+        const copyBtn = el("button", {
+          className: "primary",
+          type: "button",
+          text: snippets.copyLabel || "複製",
+          onclick: () =>
+            vscode.postMessage({ type: "copySnippet", snippetId: snippet.id }),
+        });
+        actions.appendChild(copyBtn);
+        card.appendChild(actions);
+        snippetBody.appendChild(card);
+      }
+      app.appendChild(
+        el(
+          "section",
+          {
+            className: "lane" + (laneCollapsed.snippets ? " collapsed" : ""),
+            "data-lane": "snippets",
+          },
+          snippetHead,
+          snippetBody,
+        ),
+      );
+    }
   }
 
   vscode.postMessage({ type: "ready" });

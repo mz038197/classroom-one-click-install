@@ -286,4 +286,51 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.course.actions[0]?.canRun, false);
     assert.ok(vm.environment.tip);
   });
+
+  it("hides Snippet Lane when catalog has no snippets", () => {
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerIdle,
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(vm.snippets.visible, false);
+    assert.equal(vm.snippets.items.length, 0);
+  });
+
+  it("numbers snippets in catalog order with paste hint and a four-line preview", () => {
+    const body = "line1\nline2\nline3\nline4\nline5\n";
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerIdle,
+      environment: envReady,
+      course: {
+        kind: "ready",
+        workspaceRoot: "/tmp/demo",
+        actions: [],
+        snippets: [
+          {
+            id: "stub",
+            title: "MCP 客戶端骨架",
+            pasteHint: "mcp_client.py",
+            body,
+          },
+        ],
+      },
+    });
+    assert.equal(vm.snippets.visible, true);
+    assert.equal(vm.snippets.title, "本課片段");
+    assert.equal(vm.snippets.copyLabel, "複製");
+    assert.deepEqual(vm.snippets.items, [
+      {
+        id: "stub",
+        index: 1,
+        title: "MCP 客戶端骨架",
+        pasteHintLabel: "貼進 mcp_client.py",
+        preview: "line1\nline2\nline3\nline4",
+        body,
+        expandable: true,
+      },
+    ]);
+  });
 });

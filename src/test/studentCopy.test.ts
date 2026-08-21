@@ -5,6 +5,8 @@ import {
   clearClassroomConnectionBusyMessage,
   copyClassroomApiKeyFailureMessage,
   copyClassroomApiKeySuccessMessage,
+  copyLessonSnippetFailureMessage,
+  copyLessonSnippetSuccessMessage,
 } from "../studentCopy";
 
 describe("studentCopy", () => {
@@ -34,5 +36,14 @@ describe("studentCopy", () => {
     ]) {
       assert.doesNotMatch(text, /vcr_sk_|pegasi_sk_/);
     }
+  });
+
+  it("snippet copy messages name the title and never echo the body", () => {
+    assert.equal(copyLessonSnippetSuccessMessage("MCP 客戶端骨架"), "已複製「MCP 客戶端骨架」。");
+    assert.equal(copyLessonSnippetFailureMessage(), "無法複製本課片段。");
+    assert.doesNotMatch(
+      copyLessonSnippetSuccessMessage("MCP 客戶端骨架"),
+      /def |print\(/,
+    );
   });
 });

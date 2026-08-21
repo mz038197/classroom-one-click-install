@@ -21,3 +21,11 @@ export function copyClassroomApiKeySuccessMessage(): string {
 export function copyClassroomApiKeyFailureMessage(): string {
   return "無法複製 Classroom API Key。請重新連線後再試。";
 }
+
+export function copyLessonSnippetSuccessMessage(title: string): string {
+  return `已複製「${title}」。`;
+}
+
+export function copyLessonSnippetFailureMessage(): string {
+  return "無法複製本課片段。";
+}

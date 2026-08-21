@@ -34,10 +34,13 @@ import {
 } from "./sidebarCommands";
 import { SidebarWebviewProvider } from "./sidebarWebviewProvider";
 import { copyClassroomApiKey } from "./copyClassroomApiKey";
+import { copyLessonSnippet } from "./copyLessonSnippet";
 import {
   clearClassroomConnectionBusyMessage,
   copyClassroomApiKeyFailureMessage,
   copyClassroomApiKeySuccessMessage,
+  copyLessonSnippetFailureMessage,
+  copyLessonSnippetSuccessMessage,
 } from "./studentCopy";
 
 const API_KEY_SECRET = "classroomApiKey";
@@ -221,6 +224,20 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       retryRemoteCatalog: async () => {
         reloadCatalog();
+      },
+      copySnippet: async (snippetId) => {
+        const result = await copyLessonSnippet({
+          snippetId,
+          snippets: courseLane.getSnippets(),
+          writeClipboard: (text) => vscode.env.clipboard.writeText(text),
+        });
+        if (result.ok) {
+          void vscode.window.showInformationMessage(
+            copyLessonSnippetSuccessMessage(result.title),
+          );
+        } else {
+          void vscode.window.showErrorMessage(copyLessonSnippetFailureMessage());
+        }
       },
     },
   );

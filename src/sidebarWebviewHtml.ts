@@ -277,6 +277,22 @@ export function getSidebarWebviewHtml(
       color: var(--vscode-input-foreground);
     }
     .field textarea { min-height: 52px; resize: vertical; }
+    .snippet-index {
+      opacity: 0.7;
+      font-weight: 650;
+      font-size: 12px;
+    }
+    .snippet-pre {
+      margin: 6px 0 0;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      background: var(--vscode-textCodeBlock-background, rgba(127,127,127,.12));
+    }
   </style>
 </head>
 <body>

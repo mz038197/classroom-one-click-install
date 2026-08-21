@@ -105,4 +105,82 @@ actions:
     assert.equal(actionKindLabel("package"), "套件");
     assert.equal(actionKindLabel("mcp"), "MCP");
   });
+
+  it("treats missing snippets as an empty list, not an error", () => {
+    const result = parseCourseCatalog(`
+actions:
+  - id: demo
+    title: Demo
+    kind: package
+    command: uv add demo
+`);
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+    assert.deepEqual(result.snippets, []);
+  });
+
+  it("parses snippets with optional paste_hint and keeps body whitespace", () => {
+    const result = parseCourseCatalog(`
+actions: []
+snippets:
+  - id: stub
+    title: MCP 客戶端骨架
+    paste_hint: mcp_client.py
+    body: "  def call():\\n    pass\\n"
+`);
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+    assert.deepEqual(result.snippets, [
+      {
+        id: "stub",
+        title: "MCP 客戶端骨架",
+        pasteHint: "mcp_client.py",
+        body: "  def call():\n    pass\n",
+      },
+    ]);
+  });
+
+  it("rejects illegal snippets and does not return a half catalog", () => {
+    const missingBody = parseCourseCatalog(`
+actions: []
+snippets:
+  - id: stub
+    title: 缺 body
+`);
+    assert.equal(missingBody.ok, false);
+
+    const duplicateIds = parseCourseCatalog(`
+actions: []
+snippets:
+  - id: stub
+    title: A
+    body: a
+  - id: stub
+    title: B
+    body: b
+`);
+    assert.equal(duplicateIds.ok, false);
+
+    const notArray = parseCourseCatalog(`
+actions: []
+snippets: {}
+`);
+    assert.equal(notArray.ok, false);
+
+    const emptyList = parseCourseCatalog("actions: []\nsnippets: []\n");
+    assert.equal(emptyList.ok, true);
+    if (emptyList.ok) {
+      assert.deepEqual(emptyList.snippets, []);
+    }
+
+    const yamlNull = parseCourseCatalog("actions: []\nsnippets:\n");
+    assert.equal(yamlNull.ok, true);
+    if (yamlNull.ok) {
+      assert.deepEqual(yamlNull.snippets, []);
+    }
+  });
 });

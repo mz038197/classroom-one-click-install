@@ -14,6 +14,7 @@ describe("getSidebarWebviewHtml", () => {
     assert.match(html, /載入中/);
     assert.match(html, /\.lane\.collapsed/);
     assert.match(html, /\.kind-tag/);
+    assert.match(html, /\.snippet-pre/);
     assert.match(html, /\.logo-badge/);
     assert.match(html, /\.gradient-text/);
     assert.match(html, /#007070/);

@@ -1,6 +1,6 @@
 # vans-classroom-install（凡思課堂安裝）
 
-課堂用 VS Code／Cursor 擴充功能：學生在側邊欄一鍵完成環境工具（uv／git／Node）與老師策展的本課安裝動作（uv add／uvx）。
+課堂用 VS Code／Cursor 擴充功能：學生在側邊欄一鍵完成環境工具（uv／git／Node）、老師策展的本課安裝動作（uv add／uvx），並複製本課片段。
 
 擴充功能 id：`vans-coding.vans-classroom-install`。
 

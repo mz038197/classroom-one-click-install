@@ -1,4 +1,4 @@
-import { parseCourseCatalog, type InstallAction } from "./courseCatalog";
+import { parseCourseCatalog, type InstallAction, type LessonSnippet } from "./courseCatalog";
 import { CATALOG_FILENAME } from "./courseLaneTypes";
 
 export const FALLBACK_TIP =
@@ -9,6 +9,7 @@ export type CourseCatalogLoadResult =
       ok: true;
       source: "session" | "workspace";
       actions: InstallAction[];
+      snippets: LessonSnippet[];
       tip?: string;
       canRetryRemote: boolean;
     }
@@ -40,6 +41,7 @@ export async function loadCourseCatalog(
           ok: true,
           source: "session",
           actions: parsed.actions,
+          snippets: parsed.snippets,
           canRetryRemote: true,
         };
       }
@@ -73,6 +75,7 @@ export async function loadCourseCatalog(
     ok: true,
     source: "workspace",
     actions: parsed.actions,
+    snippets: parsed.snippets,
     ...(canRetryRemote ? { tip: FALLBACK_TIP } : {}),
     canRetryRemote,
   };
