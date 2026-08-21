@@ -143,10 +143,11 @@ actions:
 
 ### 偵測
 
-- 優先在 **VS Code** 整合終端機執行「找得到指令＋版本命令成功」才算就緒（Shell Integration）。macOS 上這組版本命令須含 nvm／使用者 bin（見 [ADR 0008](./adr/0008-macos-probe-nvm-user-path.md)），不假設終端已讀 `.zshrc`。  
-- 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑**同一組**命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；不彈警告 toast。  
+- 優先在 **VS Code** 整合終端機執行版本命令；**stdout 有可解析的版本行**才算就緒（`uv 0.x`、`git version …`、Node `v…` 且 npm 亦有版本行）。結束碼不是 0（含 Shell Integration 未回報）仍可就緒。橫幅、命令回音、空輸出不算版本。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)。  
+- macOS 上 uv／git／Node 的探測須含使用者 bin（見 [ADR 0008](./adr/0008-macos-probe-nvm-user-path.md)）；**nvm 只接在 Node**，不假設終端已讀 `.zshrc`。  
+- 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑**同一組**命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；探測等待 Shell Integration 的時間與安裝相同（4s）；不彈警告 toast。  
 - **與是否由本擴充功能安裝無關**；學生在外部終端機裝好，重開／新開整合終端後按「重新檢查」即可顯示版本。  
-- Node 須同時驗證 `node` 與 `npm`。  
+- Node 須同時驗證 `node` 與 `npm` 的版本行。  
 - 細節與各 OS 指令：[研究 01](../.scratch/classroom-one-click-install/research/01-toolchain-install-win-mac.md)
 
 ### 側邊欄狀態
@@ -162,6 +163,7 @@ actions:
 3. 狀態改為「請重開終端機」——**不要**直接標成功  
 4. 學生重開終端 → 重新檢查 → 成功才就緒  
 5. 權限／MDM 失敗：保留錯誤，提示找 IT；不提權  
+6. 官方安裝器**明確**表示已安裝／不必再裝（本輪：macOS git `xcode-select --install` 的 already installed）→ 視同本次流程成功 →「請重開終端機」；**不要**把泛用結束碼 1 當成已安裝。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)。  
 
 | 工具 | Windows 預設 | macOS 預設 |
 |---|---|---|
@@ -255,8 +257,8 @@ actions:
 
 1. **Catalog 載入**：課堂連線後 Course Lane 顯示 Session Catalog 的 `title`、kind tag（與選填 `description`）；無可用遠端 YAML 時 fallback 工作區 `classroom-installs.yaml` 並提示可再試遠端。  
 2. **確認後執行**：點一本課動作會先顯示完整 `command`；取消不執行；確認後在工作區根目錄於整合終端機執行該命令。  
-3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。  
-4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。  
+3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。整合終端已印出可解析版本行時，即使探測結束碼非 0，仍顯示就緒。  
+4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。macOS git 在 CLT 已安裝、`xcode-select --install` 回 already installed 時，不得標安裝失敗／找 IT，應走「請重開終端機」。  
 5. **缺工具不鎖本課**：uv／git／Node 皆未就緒時，本課 `uv`／`uvx`／含 `git+` 的動作仍可點；確認框不提缺工具；確認後仍送進終端（失敗則一般失敗狀態＋終端原文）。  
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
 7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node。  
@@ -278,3 +280,4 @@ actions:
 | [08](../.scratch/classroom-one-click-install/issues/08-grilling-spec-outline-dod.md) | 規格大綱與 DoD |
 | [09](../.scratch/classroom-one-click-install/issues/09-task-write-spec.md) | 撰寫本規格 |
 | [10](../.scratch/classroom-one-click-install/issues/10-grilling-marketplace-publish.md) | 市集發佈策略 |
+| [11](../.scratch/classroom-one-click-install/issues/11-grilling-macos-false-missing-install.md) | 假未安裝與 already-installed（[ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)） |

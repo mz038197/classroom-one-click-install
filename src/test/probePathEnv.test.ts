@@ -8,12 +8,12 @@ import {
 } from "../probePathEnv";
 
 describe("wrapUnixProbeCommand", () => {
-  it("prepends user bins and nvm before the version command", () => {
+  it("prepends user bins before the version command", () => {
     const wrapped = wrapUnixProbeCommand("uv --version");
     assert.match(wrapped, /\$HOME\/\.local\/bin/);
     assert.match(wrapped, /\/opt\/homebrew\/bin/);
-    assert.match(wrapped, /nvm\.sh/);
     assert.match(wrapped, /uv --version$/);
+    assert.doesNotMatch(wrapped, /nvm\.sh/);
   });
 });
 
@@ -31,8 +31,12 @@ describe("environmentProbeCommands", () => {
     assert.match(node[0]!, /nvm\.sh/);
     assert.match(node[0]!, /node --version$/);
     assert.match(node[1]!, /npm --version$/);
-    assert.match(environmentProbeCommands("uv", "darwin")[0]!, /uv --version$/);
-    assert.match(environmentProbeCommands("git", "darwin")[0]!, /git --version$/);
+    const uv = environmentProbeCommands("uv", "darwin")[0]!;
+    const git = environmentProbeCommands("git", "darwin")[0]!;
+    assert.match(uv, /uv --version$/);
+    assert.doesNotMatch(uv, /nvm\.sh/);
+    assert.match(git, /git --version$/);
+    assert.doesNotMatch(git, /nvm\.sh/);
   });
 });
 

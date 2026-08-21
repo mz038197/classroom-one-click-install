@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { EnvironmentInstallPlan } from "./environmentInstallPlan";
 import type { InstallExecuteResult } from "./environmentLane";
+import { interpretShellInstallExit } from "./environmentInstallOutcome";
 import { runInIntegratedTerminal } from "./terminalRunner";
 
 /**
@@ -27,18 +28,16 @@ export async function executeEnvironmentInstallPlan(
       process.env.USERPROFILE ??
       process.env.HOME ??
       ".";
-    const exitCode = await runInIntegratedTerminal(cwd, plan.commandOrUrl);
-    if (exitCode === undefined) {
-      // 已送出但無法驗證：仍走「請重開終端」路徑，不假成功為就緒。
-      return { ok: true };
-    }
-    if (exitCode !== 0) {
-      return {
-        ok: false,
-        detail: `安裝命令失敗（結束碼 ${exitCode}）`,
-      };
-    }
-    return { ok: true };
+    const { exitCode, stdout } = await runInIntegratedTerminal(
+      cwd,
+      plan.commandOrUrl,
+    );
+    return interpretShellInstallExit({
+      tool: plan.tool,
+      platform: plan.platform,
+      exitCode,
+      output: stdout,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, detail: message };

@@ -7,14 +7,16 @@ import {
   buildProbeHostCommand,
   environmentProbeCommands,
 } from "./probePathEnv";
-import { waitForShellIntegration } from "./terminalRunner";
+import {
+  SHELL_INTEGRATION_WAIT_MS,
+  stripAnsi,
+  waitForShellIntegration,
+} from "./terminalRunner";
 import type { EnvironmentToolId, ProbeCommandResult } from "./toolProbe";
 
 const execAsync = promisify(exec);
 const ENV_CHECK_TERMINAL = "Classroom env check";
 const COMMAND_TIMEOUT_MS = 15_000;
-/** Probe waits less than install — SI 未就緒時改走後備，避免卡住重新檢查。 */
-const PROBE_SHELL_INTEGRATION_WAIT_MS = 2_000;
 
 async function readWindowsMachineUserPath(): Promise<string | undefined> {
   try {
@@ -62,12 +64,6 @@ async function runHostProbe(
   }
 }
 
-function stripAnsi(text: string): string {
-  return text
-    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "")
-    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
-}
-
 type ProbeSession = {
   terminal: vscode.Terminal;
   integration: vscode.TerminalShellIntegration;
@@ -86,7 +82,7 @@ async function openProbeSession(): Promise<ProbeSession | undefined> {
   terminal.show(false);
   const integration = await waitForShellIntegration(
     terminal,
-    PROBE_SHELL_INTEGRATION_WAIT_MS,
+    SHELL_INTEGRATION_WAIT_MS,
   );
   if (!integration) {
     terminal.dispose();
@@ -154,7 +150,7 @@ function commandsFor(tool: EnvironmentToolId): string[] {
 /**
  * 主路徑：VS Code 整合終端探測（對齊「外部安裝 → 新終端可見 → 重新檢查」）。
  * 無 Shell Integration 時靜默 fallback：Windows 用 Machine+User PATH，
- * macOS/Linux 用登入殼 `-lc`；unix 指令已含 nvm／使用者 bin（見 ADR 0005、0008）。
+ * macOS/Linux 用登入殼 `-lc`；unix 指令含使用者 bin，nvm 只接在 Node 探測（見 ADR 0005、0008、0011）。
  */
 export function createDefaultProbeRunner(): ProbeRunner {
   let session: ProbeSession | undefined;

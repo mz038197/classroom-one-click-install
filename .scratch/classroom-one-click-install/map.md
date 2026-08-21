@@ -36,6 +36,7 @@
 - [Grilling: 產品規格大綱與完成定義](./issues/08-grilling-spec-outline-dod.md) — 規格在 `docs/spec.md`；十章大綱；DoD＝寫齊並鏈結決策／≥5 驗收條，不實作擴充功能。
 - [Task: 撰寫 docs/spec.md](./issues/09-task-write-spec.md) — 已交付十章規格與 8 條驗收標準於 `docs/spec.md`。
 - [Grilling: 上架 VSIX 到市集](./issues/10-grilling-marketplace-publish.md) — 只上 VS Marketplace；市集為主、側載備援；MIT＋公開 repo；`0.1.0`；`v*` tag Actions publish＋Release VSIX；市集文案僅繁中／只寫 VS Code。
+- [Grilling: macOS 假未安裝與已裝卻安裝失敗](./issues/11-grilling-macos-false-missing-install.md) — 版本行即就緒（不要求結束碼 0）；探測等 SI 4s；nvm 只接 Node；`xcode-select` already installed 視同安裝成功仍請重開終端。
 
 ## Not yet specified
 

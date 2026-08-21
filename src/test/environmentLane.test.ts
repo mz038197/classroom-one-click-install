@@ -75,6 +75,28 @@ describe("EnvironmentLaneService", () => {
     assert.equal(lane.getView().toolchainReady, true);
   });
 
+  it("treats a parseable version as ready even when the probe exit is non-zero", async () => {
+    const probe: ProbeRunner = async (tool) => {
+      if (tool === "uv") {
+        return { exitCode: 1, stdout: "uv 0.7.12\n" };
+      }
+      if (tool === "git") {
+        return { exitCode: 1, stdout: "git version 2.45.1\n" };
+      }
+      return {
+        exitCode: 1,
+        stdout: "v22.11.0\n",
+        npm: { exitCode: 1, stdout: "10.9.0\n" },
+      };
+    };
+    const lane = new EnvironmentLaneService(probe);
+    await lane.recheck();
+    assert.equal(lane.getView().tools.find((t) => t.id === "uv")?.status, "ready");
+    assert.equal(lane.getView().tools.find((t) => t.id === "git")?.status, "ready");
+    assert.equal(lane.getView().tools.find((t) => t.id === "node")?.status, "ready");
+    assert.equal(lane.getView().toolchainReady, true);
+  });
+
   it("does not mark Toolchain Ready when only Node is missing", async () => {
     const probe: ProbeRunner = async (tool) => {
       if (tool === "node") {

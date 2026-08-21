@@ -143,7 +143,7 @@ export class CourseLaneService {
           this.store.markRunning(actionId);
           this.onDidChangeEmitter.fire();
           try {
-            const exitCode = await runInIntegratedTerminal(cwd, command);
+            const { exitCode } = await runInIntegratedTerminal(cwd, command);
             this.store.markFinished(actionId, exitCode, command);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

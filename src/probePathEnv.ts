@@ -10,16 +10,24 @@ function shellSingleQuote(value: string): string {
 }
 
 /**
- * VS Code 整合終端也不保證已載入 `.zshrc`（uv／nvm 常寫在那）。
- * 探測指令本身補使用者 bin + nvm，主路徑與 `-lc` 後備共用。
+ * VS Code 整合終端也不保證已載入 `.zshrc`（uv 常寫在 `~/.local/bin`）。
+ * 探測指令補使用者 bin；nvm 只加在 Node 探測，避免拖垮 uv／git。
  */
 export function wrapUnixProbeCommand(command: string): string {
   return [
     'export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
-    'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"',
-    '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"',
     command,
   ].join("; ");
+}
+
+function wrapUnixNodeProbeCommand(command: string): string {
+  return wrapUnixProbeCommand(
+    [
+      'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"',
+      '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"',
+      command,
+    ].join("; "),
+  );
 }
 
 export function environmentProbeCommands(
@@ -34,6 +42,9 @@ export function environmentProbeCommands(
         : ["node --version", "npm --version"];
   if (platform === "win32") {
     return raw;
+  }
+  if (tool === "node") {
+    return raw.map(wrapUnixNodeProbeCommand);
   }
   return raw.map(wrapUnixProbeCommand);
 }

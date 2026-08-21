@@ -1,0 +1,5 @@
+# Environment probe: parseable version wins; already-installed is not failure
+
+Students often have uv／git on a fresh VS Code integrated terminal while Environment Lane showed 未安裝, then Mac git install failed because `xcode-select --install` exits 1 when CLT is already present. We still match that terminal (ADR 0005), still refuse an "unknown" status, and still do not mark ready until a later recheck after install. Ready now means a parseable version line in probe stdout (`uv 0.x`, `git version …`, Node `v…` plus npm), even if Shell Integration omits exit 0. Probe waits as long as install (4s) before `$SHELL -lc`; nvm is sourced only for Node so a broken `nvm.sh` cannot hide uv／git. Official installer output that clearly says already installed is this run’s success → 請重開終端, never a generic non-zero-as-installed heuristic. First concrete signal: macOS git `already installed`. Rejected: widening PATH to conda／mise, `-lic`／sourcing `.zshrc` in fallback, and treating any exit 1 as already present.
+
+Refines [ADR 0005](./0005-environment-probe-path.md) and [ADR 0008](./0008-macos-probe-nvm-user-path.md).

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 const TERMINAL_NAME = "Classroom install";
-const SHELL_INTEGRATION_WAIT_MS = 4000;
+export const SHELL_INTEGRATION_WAIT_MS = 4000;
 
 function createTerminalAtWorkspaceRoot(cwd: string): vscode.Terminal {
   // 既有 terminal 無法改 cwd；每次以工作區根目錄新建，避免命令跑錯目錄。
@@ -11,6 +11,12 @@ function createTerminalAtWorkspaceRoot(cwd: string): vscode.Terminal {
     }
   }
   return vscode.window.createTerminal({ name: TERMINAL_NAME, cwd });
+}
+
+export function stripAnsi(text: string): string {
+  return text
+    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "")
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 }
 
 export async function waitForShellIntegration(
@@ -36,34 +42,46 @@ export async function waitForShellIntegration(
   });
 }
 
+export type IntegratedTerminalRunResult = {
+  exitCode: number | undefined;
+  stdout: string;
+};
+
 /**
- * 主路徑：Shell Integration `executeCommand` + exit code。
- * 無整合時 fallback `sendText`，回傳 undefined（結果未知）。
+ * 主路徑：Shell Integration `executeCommand` + exit code／stdout。
+ * 無整合時 fallback `sendText`，exitCode 為 undefined（結果未知）。
  */
 export async function runInIntegratedTerminal(
   cwd: string,
   command: string,
-): Promise<number | undefined> {
+): Promise<IntegratedTerminalRunResult> {
   const terminal = createTerminalAtWorkspaceRoot(cwd);
   terminal.show(true);
 
   const integration = await waitForShellIntegration(terminal);
   if (!integration) {
     terminal.sendText(command, true);
-    return undefined;
+    return { exitCode: undefined, stdout: "" };
   }
 
   const execution = integration.executeCommand(command);
-  return new Promise((resolve) => {
+  let stdout = "";
+  const reading = (async () => {
+    for await (const chunk of execution.read()) {
+      stdout += chunk;
+    }
+  })();
+
+  const exitCode = await new Promise<number | undefined>((resolve) => {
     let settled = false;
-    const finish = (exitCode: number | undefined): void => {
+    const finish = (code: number | undefined): void => {
       if (settled) {
         return;
       }
       settled = true;
       endSub.dispose();
       closeSub.dispose();
-      resolve(exitCode);
+      resolve(code);
     };
 
     const endSub = vscode.window.onDidEndTerminalShellExecution((event) => {
@@ -81,4 +99,7 @@ export async function runInIntegratedTerminal(
       finish(closed.exitStatus?.code ?? 1);
     });
   });
+
+  await reading;
+  return { exitCode, stdout: stripAnsi(stdout) };
 }
