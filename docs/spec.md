@@ -125,7 +125,7 @@ actions:
     kind: mcp
     description: 把 vans-mcp 寫進工作區 .vscode/mcp.json（第一次用時再貼 Classroom API Key）
     command: >-
-      uvx --from git+https://github.com/mz038197/peas-agent-mcp.git@master#subdirectory=vans-mcp add-vans-mcp
+      uvx --from git+https://github.com/mz038197/peas-agent-mcp.git@v0.2.0#subdirectory=vans-mcp add-vans-mcp
 
   - id: mattpocock-skills
     title: 安裝 Matt Pocock skills
