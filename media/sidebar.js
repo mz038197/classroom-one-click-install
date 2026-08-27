@@ -15,6 +15,9 @@
   };
   /** Accordion: only one Lesson Snippet is expanded at a time. */
   let expandedSnippetId = null;
+  /** Survive full re-render while typing Invite Code / Classroom Nickname. */
+  let fieldCaret = { id: "", start: 0, end: 0 };
+  let restoreFieldCaret = false;
 
   window.addEventListener("message", (event) => {
     const msg = event.data;
@@ -167,6 +170,42 @@
     return head;
   }
 
+  function rememberCaret(ev) {
+    const target = ev.target;
+    if (
+      !(target instanceof HTMLInputElement) &&
+      !(target instanceof HTMLTextAreaElement)
+    ) {
+      return;
+    }
+    fieldCaret = {
+      id: target.id || "",
+      start: target.selectionStart || 0,
+      end: target.selectionEnd || 0,
+    };
+    restoreFieldCaret = true;
+  }
+
+  function restoreCaret() {
+    if (!restoreFieldCaret || !fieldCaret.id) {
+      return;
+    }
+    restoreFieldCaret = false;
+    const node = document.getElementById(fieldCaret.id);
+    if (
+      !(node instanceof HTMLInputElement) &&
+      !(node instanceof HTMLTextAreaElement)
+    ) {
+      return;
+    }
+    node.focus();
+    try {
+      node.setSelectionRange(fieldCaret.start, fieldCaret.end);
+    } catch {
+      // some input types reject selectionRange
+    }
+  }
+
   function render(vm) {
     clear(app);
 
@@ -196,11 +235,15 @@
       status: "idle",
       statusLabel: "尚未設定",
       inviteCode: "",
+      nickname: "",
       detail: "",
       showPasteUi: false,
+      showNicknameField: false,
       canOpenSignIn: false,
       canRedeem: false,
+      canNicknameRedeem: false,
       signInLabel: "連線登入",
+      connectLabel: "連線",
       redeemLabel: "貼上並完成連線",
     };
     const routerHead = laneHeader("router", "課堂連線", null);
@@ -228,12 +271,53 @@
         placeholder: "老師提供的邀請碼",
         autocomplete: "off",
         oninput: (ev) => {
+          rememberCaret(ev);
+          if (ev.isComposing) {
+            return;
+          }
+          const value = ev.target && ev.target.value != null ? String(ev.target.value) : "";
+          vscode.postMessage({ type: "setInviteCode", inviteCode: value });
+        },
+        oncompositionend: (ev) => {
+          rememberCaret(ev);
           const value = ev.target && ev.target.value != null ? String(ev.target.value) : "";
           vscode.postMessage({ type: "setInviteCode", inviteCode: value });
         },
       }),
     );
     routerBody.appendChild(inviteField);
+    const showNicknameField = !!router.showNicknameField;
+    if (showNicknameField) {
+      routerBody.appendChild(
+        el(
+          "div",
+          { className: "field" },
+          el("label", { text: "課堂暱稱", for: "classroom-nickname" }),
+          el("input", {
+            id: "classroom-nickname",
+            type: "text",
+            value: router.nickname || "",
+            placeholder: "同一個班裡專用的暱稱",
+            autocomplete: "off",
+            oninput: (ev) => {
+              rememberCaret(ev);
+              if (ev.isComposing) {
+                return;
+              }
+              const value =
+                ev.target && ev.target.value != null ? String(ev.target.value) : "";
+              vscode.postMessage({ type: "setNickname", nickname: value });
+            },
+            oncompositionend: (ev) => {
+              rememberCaret(ev);
+              const value =
+                ev.target && ev.target.value != null ? String(ev.target.value) : "";
+              vscode.postMessage({ type: "setNickname", nickname: value });
+            },
+          }),
+        ),
+      );
+    }
     const showPasteUi = !!router.showPasteUi;
     if (showPasteUi) {
       const pasteField = el(
@@ -248,10 +332,20 @@
       routerBody.appendChild(pasteField);
     }
     const routerActions = el("div", { className: "row-actions" });
+    if (showNicknameField) {
+      const connectBtn = el("button", {
+        className: "primary",
+        type: "button",
+        text: router.connectLabel || "連線",
+        onclick: () => vscode.postMessage({ type: "routerConnect" }),
+      });
+      connectBtn.disabled = !router.canNicknameRedeem;
+      routerActions.appendChild(connectBtn);
+    }
     const signInBtn = el("button", {
-      className: "primary",
+      className: showNicknameField ? "secondary" : "primary",
       type: "button",
-      text: router.signInLabel || "連線登入",
+      text: router.signInLabel || (showNicknameField ? "使用 Google 登入" : "連線登入"),
       onclick: () => vscode.postMessage({ type: "routerSignIn" }),
     });
     signInBtn.disabled = !router.canOpenSignIn;
@@ -503,6 +597,7 @@
         ),
       );
     }
+    restoreCaret();
   }
 
   vscode.postMessage({ type: "ready" });

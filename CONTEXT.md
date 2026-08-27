@@ -29,8 +29,8 @@ _Avoid_: 巢狀 `groups`（已撤回）, 應用內建唯一清單, 多份並行�
 _Avoid_: 只實作單一 router 部署, 兩套不相容的 catalog API／YAML 形狀
 
 **Router Lane**:
-側邊欄最上方區塊（學生可見標題「課堂連線」）：學生須先輸入 Invite Code 才能「連線登入」；主路徑為填碼 → Google → 深連結回來後自動兌換並 BYOK Setup。進入「等待登入」（或連線失敗）後才露出一次性貼碼與「貼上並完成連線」，供深連結未跳回時使用；可「重新連線登入」清掉舊手遞重跑。等待期間邀請碼仍可改。本機已有 Classroom API Key（已設定）時，顯示課堂名稱（Class Label），就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart 後 Class Label 仍須與「已設定」一併還原。Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口與 Class Label。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。Windows 與 macOS 同一套連線登入，不為 Mac 另加步驟。
-_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼仍開 Google, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）, 重啟後只還原 key 卻丟課堂名稱, 為 macOS 另做一套連線登入
+側邊欄最上方區塊（學生可見標題「課堂連線」）。連上凡思 Router 時：預設只看到 Invite Code、Classroom Nickname 與「連線」；主路徑為 Nickname Redeem → BYOK Setup。Google → Sign-in Handoff 為次要「使用 Google 登入」，點入後才露出一次性貼碼與「貼上並完成連線」。此捷徑只設計給 VS Code，不為 Cursor 做 Nickname Redeem。連上 Pegasi Router 時：沒有 Nickname Redeem，主路徑仍為 Invite Code → Google → Sign-in Handoff。等待期間邀請碼（凡思另加暱稱）仍可改。本機已有 Classroom API Key（已設定）時，顯示課堂名稱（Class Label），就緒 detail 統一為「Classroom API Key 已設定。」（含剛兌換成功與之後從密存還原），並提供 Copy Classroom API Key；Host Full Restart 後 Class Label 仍須與「已設定」一併還原。Host Full Restart／BYOK 重啟指引仍走右下角 toast，不塞進就緒 detail。未設定或 Clear Classroom Connection 後不顯示複製入口與 Class Label。可整區收合／展開。Portal 網頁兌換與下載 install 腳本僅為備援。Windows 與 macOS 同一套連線，不為 Mac 另加步驟。
+_Avoid_: 塞進 Environment Lane, Course Lane, 僅命令面板而無側邊欄入口, 與 Portal 並列為同等主路徑, 無碼或（凡思）無暱稱仍兌換, 凡思上把 Google 當學生主按鈕, 對 Pegasi 也做 Nickname Redeem, 為 Cursor 做 Nickname Redeem, idle 就顯示貼碼／完成鈕, 未設定仍露出複製入口, 就緒 detail 再寫長串 BYOK／重啟說明（與密存還原兩套文案）, 重啟後只還原 key 卻丟課堂名稱, 為 macOS 另做一套連線
 
 **Class Label**:
 Router Lane 就緒時顯示的課堂識別文案（例如 class 名與 session 名以「·」串起）；來自兌換結果，不是 Classroom API Key 本體。須在本機已連線期間跨 Host Full Restart 仍可顯示；隨 Clear Classroom Connection 一併清除。
@@ -53,8 +53,8 @@ uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用�
 _Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 依各動作所需工具是否就緒來啟用本課動作, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準, 結束碼非 0 就當未安裝（即使已印版本）, uv／git 探測因 nvm.sh 失敗而顯示未安裝
 
 **Branded Distribution**:
-同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id 與預設 `routerBaseUrl`；Install Action／Lesson Snippet／四條 Lane／Router 契約不為品牌各寫一套。
-_Avoid_: 為每個品牌複製業務邏輯, Template 複製後永不合併, 要求 Pegasi 學生共用凡思 extension id
+同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id、預設 `routerBaseUrl`，以及 Nickname Redeem（只存在於凡思 Router；Pegasi 永不做這條路，學生仍走 Google + Sign-in Handoff）。Install Action／Lesson Snippet／Catalog GET 契約不為品牌各寫一套。
+_Avoid_: 為每個品牌複製業務邏輯, Template 複製後永不合併, 要求 Pegasi 學生共用凡思 extension id, 把 Nickname Redeem 當成兩邊共享的 Router 契約
 
 **Marketplace Install**:
 VS Code 學生從 Visual Studio Marketplace 安裝本擴充功能的主路徑。
@@ -64,9 +64,25 @@ _Avoid_: 市集側載, Open VSX 安裝（本產品不上架 Open VSX）
 以 `.vsix` 檔直接安裝擴充功能的備援路徑；用於 Cursor、離線、市集異常，或需固定某一版本時。
 _Avoid_: 從市集安裝, 本機開發 Host（F5）當課堂安裝
 
+**Class**:
+老師擁有、比單堂上課更長壽的班；Class Session 屬於它。Classroom Nickname 的唯一範圍是一個 Class，不是全站、也不是單堂 Session。
+_Avoid_: 把 Class Session 當成 Class, 用 Course Catalog 當班
+
+**Classroom Nickname**:
+學生在 Nickname Redeem 時輸入的身分字串，在同一個 Class 內唯一。比對只去掉前後空白，其餘逐字相同（大小寫有差）；去掉空白後若空則不是暱稱。同一 Class、同一暱稱跨堂課是同一人，不可改名；換一個字就是另一個學生。永不與 Google 使用者自動合併。教師可停用該學生；撞名不拆成兩人。
+_Avoid_: Guest, Guest User, 登入名, 用 email 當身分, 學號當獨立身分欄, 自動合併 Google, 拆開撞名, 摺疊大小寫或中間空白
+
+**Nickname Redeem**:
+用 Invite Code 加上 Classroom Nickname 兌換該 Class Session 的 Classroom API Key。只出現在凡思 Router、VS Code 的 Router Lane；不做 Portal 網頁、不為 Cursor 設計。每個 Class Session 預設允許，受 Session Seat Limit 限制，門檻是有效邀請碼（不是 Portal 開放註冊），不經 Google、也不經 Sign-in Handoff。Pegasi Router 沒有這條路。
+_Avoid_: Guest redeem, 全班共用一把 key, 教師長效 key, 把這條路叫「連線登入」, Pegasi 也做暱稱兌換, Portal 網頁暱稱兌換, Cursor Nickname Redeem
+
+**Session Seat Limit**:
+教師為單一 Class Session 設定、可 Nickname Redeem 的不同 Classroom Nickname 上限。預設 60，教師可改。已有的暱稱重連不佔新名額；Google 兌換不計入。滿了則新暱稱被拒。
+_Avoid_: 全班共用 key 的額度, open_registration, 用此上限去限制 Google 學生
+
 **Invite Code**:
-老師為某一課堂發出、給學生兌換用的短碼；學生只在擴充內輸入，不經深連結或開啟登入的 URL 傳遞。空白時不可開始「連線登入」；有碼且 Sign-in Handoff 到達時自動兌換。擴充內輸入不改變既有兌換威脅模型（仍須 Google 身分＋有效碼）；不在此產品範圍內單獨加硬 router（如 rate limit）。
-_Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把擴充輸入框本身當成新的匿名兌換破口
+老師為某一課堂發出、給學生兌換用的短碼；學生只在擴充內輸入，不經深連結或開啟登入的 URL 傳遞。凡思 Router 上空白邀請碼或空白 Classroom Nickname 都不可開始 Nickname Redeem；Sign-in Handoff 為備援。Portal 網頁兌換仍要 Google，不是 Nickname Redeem。有效邀請碼即可入場，威脅模型弱於「Google＋碼」；rate limit 仍非本擴充範圍。
+_Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把 Classroom Nickname 當成 Google 帳號
 
 **Classroom API Key**:
 兌換 Invite Code 後取得的 `vcr_sk_…` 憑證；編輯器以此呼叫 router 的 OpenAI-compatible API。擴充在兌換成功後保存它（Host secret、固定 hex id、覆寫同一格）；換新邀請碼時再跑一次流程並覆寫。本機不會隨課堂結束自動刪除。側邊欄與本課確認框不渲染 key 本體明文。Workspace MCP Config 不寫入此 key；學生第一次啟動該 MCP 時由編輯器以 input variable 詢問，可先用 Copy Classroom API Key 再貼。
@@ -81,8 +97,8 @@ _Avoid_: 複製 Sign-in Handoff, 複製 Invite Code, 僅兌換成功當下可複
 _Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked, 清除連線後仍留下 Class Label, 清除連線時刪掉 .vscode/mcp.json
 
 **Sign-in Handoff**:
-瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。
-_Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失敗就只能改走 Portal
+瀏覽器完成 Google 登入後交給擴充的短效、單次證明，僅供立刻兌換 Invite Code；不是長期 Portal session，兌換後即丟棄。凡思 Router 上這是 Google 備援，不是 Nickname Redeem 的預設路徑；Pegasi Router 上這仍是學生主路徑。備援／Pegasi 主路徑經 `vscode://` 深連結；深連結失敗時以瀏覽器顯示的一次性貼碼交回擴充。URI／貼碼皆不得承載 Classroom API Key。
+_Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失敗就只能改走 Portal, 凡思 Nickname Redeem 仍要 handoff
 
 **Workspace MCP Config**:
 工作區 `.vscode/mcp.json` 裡由本課安裝寫入的課堂 MCP（server 名 `vans-mcp`）。Authorization 使用 VS Code input variable（`${input:vcr_api_key}` 加上對應 `inputs`），檔內不含 Classroom API Key 明文。只保證 VS Code。與 Action Kind `mcp`（純顯示 tag）不是同一件事，也不是 Python 客戶端的 `peas-mcp.json`。清連線不刪；已有檔則只更新 `vans-mcp` 與該 input。不含密件，不必為此 gitignore。

@@ -15,7 +15,9 @@ type WebviewInbound =
   | { type: "installEnv"; toolId: EnvironmentToolId }
   | { type: "runAction"; actionId: string }
   | { type: "setInviteCode"; inviteCode: string }
+  | { type: "setNickname"; nickname: string }
   | { type: "routerSignIn" }
+  | { type: "routerConnect" }
   | { type: "routerRedeem" }
   | { type: "routerClear" }
   | { type: "routerCopyApiKey" }
@@ -38,6 +40,7 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       installEnv: (toolId: EnvironmentToolId) => Promise<void>;
       runAction: (actionId: string) => Promise<void>;
       routerSignIn: () => Promise<void>;
+      routerConnect: () => Promise<void>;
       routerRedeem: () => Promise<void>;
       routerClear: () => Promise<void>;
       routerCopyApiKey: () => Promise<void>;
@@ -113,8 +116,16 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
           this.routerLane.setInviteCode(msg.inviteCode);
         }
         return;
+      case "setNickname":
+        if (typeof msg.nickname === "string") {
+          this.routerLane.setNickname(msg.nickname);
+        }
+        return;
       case "routerSignIn":
         await this.handlers.routerSignIn();
+        return;
+      case "routerConnect":
+        await this.handlers.routerConnect();
         return;
       case "routerRedeem":
         await this.handlers.routerRedeem();

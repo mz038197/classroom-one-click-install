@@ -169,6 +169,11 @@ export function activate(context: vscode.ExtensionContext): void {
         await routerLane.openGoogleSignIn();
         refreshUi();
       },
+      routerConnect: async () => {
+        const result = await routerLane.nicknameRedeemAndSetup();
+        reloadCatalog();
+        await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
+      },
       routerRedeem: async () => {
         const result = await routerLane.redeemAndSetup();
         reloadCatalog();

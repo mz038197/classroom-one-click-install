@@ -8,9 +8,12 @@ import type { RouterLaneView } from "../routerLaneService";
 const routerIdle: RouterLaneView = {
   status: "idle",
   inviteCode: "",
+  nickname: "",
   detail: "輸入邀請碼",
   showPasteUi: false,
+  showNicknameField: true,
   canRedeem: false,
+  canNicknameRedeem: false,
   canOpenSignIn: false,
   canClear: false,
   canCopyApiKey: false,
@@ -69,8 +72,10 @@ describe("buildSidebarViewModel", () => {
 
     assert.equal(vm.title, "凡思課堂安裝");
     assert.equal(vm.workspaceLabel, "工作區：demo");
-    assert.equal(vm.router.signInLabel, "連線登入");
+    assert.equal(vm.router.connectLabel, "連線");
+    assert.equal(vm.router.signInLabel, "使用 Google 登入");
     assert.equal(vm.router.redeemLabel, "貼上並完成連線");
+    assert.equal(vm.router.showNicknameField, true);
     assert.equal(vm.router.showPasteUi, false);
     assert.equal(vm.router.statusLabel, "尚未設定");
     assert.equal(vm.router.canCopyApiKey, false);
@@ -82,13 +87,32 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.hasCustomCommandInput, false);
   });
 
+  it("keeps 連線登入 as primary when Nickname Redeem is off", () => {
+    const routerPegasi: RouterLaneView = {
+      ...routerIdle,
+      showNicknameField: false,
+    };
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerPegasi,
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(vm.router.showNicknameField, false);
+    assert.equal(vm.router.signInLabel, "連線登入");
+    assert.equal(vm.router.connectLabel, "連線");
+  });
+
   it("shows paste UI labels while awaiting Sign-in Handoff", () => {
     const routerAwaiting: RouterLaneView = {
       status: "awaiting_sign_in",
       inviteCode: "ABC",
+      nickname: "Ada",
       detail: "已開啟瀏覽器",
       showPasteUi: true,
+      showNicknameField: true,
       canRedeem: true,
+      canNicknameRedeem: true,
       canOpenSignIn: true,
       canClear: false,
       canCopyApiKey: false,
@@ -100,17 +124,46 @@ describe("buildSidebarViewModel", () => {
       course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
     });
     assert.equal(vm.router.showPasteUi, true);
+    assert.equal(vm.router.connectLabel, "連線");
     assert.equal(vm.router.signInLabel, "重新連線登入");
     assert.equal(vm.router.redeemLabel, "貼上並完成連線");
+  });
+
+  it("keeps 使用 Google 登入 after a Nickname Redeem error", () => {
+    const routerNickError: RouterLaneView = {
+      status: "error",
+      inviteCode: "ABC",
+      nickname: "Ada",
+      detail: "此課堂座位已滿，無法以新暱稱領取",
+      showPasteUi: false,
+      showNicknameField: true,
+      canRedeem: false,
+      canNicknameRedeem: true,
+      canOpenSignIn: true,
+      canClear: false,
+      canCopyApiKey: false,
+    };
+    const vm = buildSidebarViewModel({
+      workspaceName: "demo",
+      router: routerNickError,
+      environment: envReady,
+      course: { kind: "ready", workspaceRoot: "/tmp/demo", actions: [] },
+    });
+    assert.equal(vm.router.signInLabel, "使用 Google 登入");
+    assert.equal(vm.router.connectLabel, "連線");
+    assert.equal(vm.router.showPasteUi, false);
   });
 
   it("exposes Copy Classroom API Key when Router Lane is ready", () => {
     const routerReady: RouterLaneView = {
       status: "ready",
       inviteCode: "",
+      nickname: "",
       detail: "Classroom API Key 已設定。",
       showPasteUi: false,
+      showNicknameField: true,
       canRedeem: false,
+      canNicknameRedeem: false,
       canOpenSignIn: false,
       canClear: true,
       canCopyApiKey: true,

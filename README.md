@@ -22,7 +22,7 @@
 
 ### 學生：課堂連線（Router）＋本課 Catalog
 
-1. 側邊欄最上方 **課堂連線（Router Lane）**：先填邀請碼 →「連線登入」→ Google → 深連結回來後自動兌換並寫入 BYOK。深連結失敗時才出現一次性貼碼，貼上後按「貼上並完成連線」；卡住可「重新連線登入」。換新邀請碼再跑一次即可。
+1. 側邊欄最上方 **課堂連線（Router Lane）**：先填邀請碼與課堂暱稱 →「連線」→ Nickname Redeem 後寫入 BYOK。Google 為次要「使用 Google 登入」；深連結失敗時才出現一次性貼碼，貼上後按「貼上並完成連線」。換新邀請碼再跑一次即可。
 2. 把 `classroom-installs.yaml` 放到**工作區根目錄**（可直接用 repo 內示例，或老師改過的版本）。
 3. Environment Lane（uv／git／Node）：未就緒就「安裝」，裝完依提示**重開終端**再「重新檢查」。
 4. Course Lane 列出本課動作；點選 → 確認完整 command → 在整合終端機執行。

@@ -41,13 +41,17 @@ export type SidebarRouterVm = {
   status: RouterLaneView["status"];
   statusLabel: string;
   inviteCode: string;
+  nickname: string;
   detail: string;
   classLabel?: string;
   showPasteUi: boolean;
+  showNicknameField: boolean;
   canOpenSignIn: boolean;
   canRedeem: boolean;
+  canNicknameRedeem: boolean;
   canClear: boolean;
   canCopyApiKey: boolean;
+  connectLabel: string;
   signInLabel: string;
   redeemLabel: string;
   clearLabel: string;
@@ -118,14 +122,18 @@ export function buildSidebarViewModel(
       status: router.status,
       statusLabel: routerStatusLabel(router.status),
       inviteCode: router.inviteCode,
+      nickname: router.nickname,
       detail: router.detail,
       ...(router.classLabel ? { classLabel: router.classLabel } : {}),
       showPasteUi: router.showPasteUi,
+      showNicknameField: router.showNicknameField,
       canOpenSignIn: router.canOpenSignIn,
       canRedeem: router.canRedeem,
+      canNicknameRedeem: router.canNicknameRedeem,
       canClear: router.canClear,
       canCopyApiKey: router.canCopyApiKey,
-      signInLabel: routerSignInLabel(router.status),
+      connectLabel: "連線",
+      signInLabel: routerSignInLabel(router),
       redeemLabel: "貼上並完成連線",
       clearLabel: "清除課堂連線",
       copyApiKeyLabel: "複製",
@@ -169,9 +177,15 @@ function routerStatusLabel(status: RouterLaneView["status"]): string {
   }
 }
 
-function routerSignInLabel(status: RouterLaneView["status"]): string {
-  if (status === "awaiting_sign_in" || status === "error") {
+function routerSignInLabel(router: RouterLaneView): string {
+  if (
+    router.status === "awaiting_sign_in" ||
+    (router.status === "error" && router.showPasteUi)
+  ) {
     return "重新連線登入";
+  }
+  if (router.showNicknameField) {
+    return "使用 Google 登入";
   }
   return "連線登入";
 }

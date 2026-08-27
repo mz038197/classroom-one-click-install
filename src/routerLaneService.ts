@@ -12,7 +12,7 @@ import {
   hostStateDbPath,
   isHostStateDbBusyError,
 } from "./hostStateDb";
-import type { RouterPortalClient } from "./routerPortalClient";
+import type { RedeemResult, RouterPortalClient } from "./routerPortalClient";
 import { parseHandoffToken } from "./routerHandoffUri";
 import {
   classroomApiKeyReadyDetail,
@@ -30,12 +30,16 @@ export type RouterLaneStatus =
 export type RouterLaneView = {
   status: RouterLaneStatus;
   inviteCode: string;
+  nickname: string;
   detail: string;
   classLabel?: string;
   expiresAt?: string;
   /** Paste-code fallback +「貼上並完成連線」：僅等待／失敗支線可見。 */
   showPasteUi: boolean;
+  /** Invite Code + Classroom Nickname +「連線」：凡思 VS Code 主路徑。 */
+  showNicknameField: boolean;
   canRedeem: boolean;
+  canNicknameRedeem: boolean;
   canOpenSignIn: boolean;
   canClear: boolean;
   /** Copy Classroom API Key control; only when ready with a stored key. */
@@ -53,15 +57,24 @@ type OpenExternal = (url: string) => Thenable<boolean>;
 const CURSOR_BLOCK_DETAIL =
   "Cursor 不支援自動 BYOK。請改用 VS Code 完成課堂連線，或至 Portal 手動設定模型與 API Key。";
 
+const IDLE_NICKNAME_DETAIL =
+  "輸入邀請碼與課堂暱稱後按「連線」，即可兌換並完成 BYOK 設定。";
+
+const IDLE_GOOGLE_DETAIL =
+  "輸入邀請碼後按「連線登入」，即可兌換並完成 BYOK 設定。";
+
 export class RouterLaneService {
   private readonly emitter = new EventEmitter();
   private inviteCode = "";
+  private nickname = "";
   private pendingHandoff: string | undefined;
+  private googleFallbackActive = false;
   private status: RouterLaneStatus = "idle";
-  private detail = "輸入邀請碼後按「連線登入」，即可兌換並完成 BYOK 設定。";
+  private detail: string;
   private classLabel?: string;
   private expiresAt?: string;
   private readonly unsupportedHost: boolean;
+  private readonly nicknameRedeemEnabled: boolean;
 
   constructor(
     private readonly client: RouterPortalClient,
@@ -95,9 +108,14 @@ export class RouterLaneService {
         set: (label: string) => Thenable<void>;
         clear: () => Thenable<void>;
       };
+      /** Pegasi-branded distributions pass false; Vans VS Code defaults to on. */
+      enableNicknameRedeem?: boolean;
     },
   ) {
     this.unsupportedHost = isUnsupportedByokHost(options.uriScheme);
+    this.nicknameRedeemEnabled =
+      (options.enableNicknameRedeem ?? true) && !this.unsupportedHost;
+    this.detail = this.idleDetail();
     if (this.unsupportedHost) {
       this.status = "error";
       this.detail = CURSOR_BLOCK_DETAIL;
@@ -113,17 +131,28 @@ export class RouterLaneService {
     const busy = this.status === "busy";
     const blocked = this.unsupportedHost;
     const hasInvite = !!this.inviteCode.trim();
+    const hasNickname = !!this.nickname.trim();
+    const showNicknameField = !blocked && this.nicknameRedeemEnabled;
     const showPasteUi =
       !blocked &&
-      (this.status === "awaiting_sign_in" || this.status === "error");
+      (this.status === "awaiting_sign_in" ||
+        (this.status === "error" && this.googleFallbackActive));
     return {
       status: this.status,
       inviteCode: this.inviteCode,
+      nickname: this.nickname,
       detail: this.detail,
       ...(this.classLabel ? { classLabel: this.classLabel } : {}),
       ...(this.expiresAt ? { expiresAt: this.expiresAt } : {}),
       showPasteUi,
+      showNicknameField,
       canRedeem: showPasteUi && !busy && hasInvite,
+      canNicknameRedeem:
+        showNicknameField &&
+        !busy &&
+        hasInvite &&
+        hasNickname &&
+        this.status !== "ready",
       canOpenSignIn: !busy && !blocked && hasInvite,
       canClear: !busy && !blocked && this.status === "ready",
       canCopyApiKey: !busy && !blocked && this.status === "ready",
@@ -138,18 +167,29 @@ export class RouterLaneService {
     this.emit();
   }
 
+  setNickname(nickname: string): void {
+    if (this.unsupportedHost) {
+      return;
+    }
+    this.nickname = nickname;
+    this.emit();
+  }
+
   async openGoogleSignIn(): Promise<RouterLaneActionResult> {
     if (this.blockIfUnsupported()) {
       return { needsReload: false };
     }
     if (!this.inviteCode.trim()) {
       this.status = "idle";
-      this.detail = "請先輸入邀請碼，再按「連線登入」。";
+      this.detail = this.nicknameRedeemEnabled
+        ? "請先輸入邀請碼，再按「使用 Google 登入」。"
+        : "請先輸入邀請碼，再按「連線登入」。";
       this.emit();
       return { needsReload: false };
     }
     // R1：重新連線登入時丟掉舊手遞，避免過期 token 被誤用。
     this.pendingHandoff = undefined;
+    this.googleFallbackActive = true;
     const url = `${this.options.baseUrl.replace(/\/+$/, "")}/auth/google/login?client=extension`;
     this.status = "awaiting_sign_in";
     this.detail =
@@ -172,6 +212,7 @@ export class RouterLaneService {
       return { needsReload: false };
     }
     this.pendingHandoff = token;
+    this.googleFallbackActive = true;
     if (!this.inviteCode.trim()) {
       this.status = "awaiting_sign_in";
       this.detail =
@@ -180,6 +221,36 @@ export class RouterLaneService {
       return { needsReload: false };
     }
     return this.redeemAndSetup();
+  }
+
+  async nicknameRedeemAndSetup(): Promise<RouterLaneActionResult> {
+    if (this.blockIfUnsupported()) {
+      return { needsReload: false };
+    }
+    if (!this.nicknameRedeemEnabled) {
+      return { needsReload: false };
+    }
+    this.googleFallbackActive = false;
+    const invite = this.inviteCode.trim();
+    const nickname = this.nickname.trim();
+    if (!invite || !nickname) {
+      this.status = "idle";
+      this.detail = "請先輸入邀請碼與課堂暱稱，再按「連線」。";
+      this.emit();
+      return { needsReload: false };
+    }
+
+    this.status = "busy";
+    this.detail = "兌換中…";
+    this.emit();
+
+    try {
+      const template = await this.client.fetchChatLanguageModelsTemplate();
+      const redeemed = await this.client.redeemWithNickname(invite, nickname);
+      return await this.applyRedeemed(redeemed, template);
+    } catch (err) {
+      return this.failRedeem(err);
+    }
   }
 
   async redeemAndSetup(): Promise<RouterLaneActionResult> {
@@ -211,56 +282,9 @@ export class RouterLaneService {
       const template = await this.client.fetchChatLanguageModelsTemplate();
       const redeemed = await this.client.redeemWithHandoff(handoff, invite);
       this.pendingHandoff = undefined;
-
-      const apiKeyRef = toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY);
-      const write = this.options.writeByok ?? writeByokFile;
-      const userDir = this.options.resolveUserDir();
-      await write({
-        userDir,
-        template,
-        apiKey: apiKeyRef,
-      });
-
-      const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
-      await this.options.secretStore.store(secretKey, redeemed.api_key);
-      await this.options.secretStore.store(
-        CLASSROOM_CHAT_LM_SECRET_KEY,
-        redeemed.api_key,
-      );
-
-      // Prefer promote-with-retry after secrets.store (extension host often has no safeStorage).
-      const writeHost =
-        this.options.writeHostSecret ??
-        ((args: {
-          stateDbPath: string;
-          plaintext: string;
-          extensionId: string;
-        }) => ensureHostChatLmSecret(args));
-      await writeHost({
-        stateDbPath: hostStateDbPath(userDir),
-        plaintext: redeemed.api_key,
-        extensionId: this.options.extensionId,
-      });
-
-      this.classLabel =
-        [redeemed.session.class_name, redeemed.session.name].filter(Boolean).join(" · ") ||
-        undefined;
-      this.expiresAt = redeemed.session.expires_at;
-      if (this.classLabel) {
-        await this.options.classLabelStore?.set(this.classLabel);
-      } else {
-        await this.options.classLabelStore?.clear();
-      }
-      this.status = "ready";
-      this.detail = classroomApiKeyReadyDetail();
-      this.emit();
-      return { needsReload: true };
+      return await this.applyRedeemed(redeemed, template);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.status = "error";
-      this.detail = message;
-      this.emit();
-      return { needsReload: false };
+      return this.failRedeem(err);
     }
   }
 
@@ -284,7 +308,9 @@ export class RouterLaneService {
       });
       await this.options.classLabelStore?.clear();
       this.inviteCode = "";
+      this.nickname = "";
       this.pendingHandoff = undefined;
+      this.googleFallbackActive = false;
       this.classLabel = undefined;
       this.expiresAt = undefined;
       this.status = "idle";
@@ -323,6 +349,66 @@ export class RouterLaneService {
         this.emit();
       }
     }
+  }
+
+  private idleDetail(): string {
+    return this.nicknameRedeemEnabled ? IDLE_NICKNAME_DETAIL : IDLE_GOOGLE_DETAIL;
+  }
+
+  private async applyRedeemed(
+    redeemed: RedeemResult,
+    template: ChatLanguageModelProvider[],
+  ): Promise<RouterLaneActionResult> {
+    const apiKeyRef = toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY);
+    const write = this.options.writeByok ?? writeByokFile;
+    const userDir = this.options.resolveUserDir();
+    await write({
+      userDir,
+      template,
+      apiKey: apiKeyRef,
+    });
+
+    const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
+    await this.options.secretStore.store(secretKey, redeemed.api_key);
+    await this.options.secretStore.store(
+      CLASSROOM_CHAT_LM_SECRET_KEY,
+      redeemed.api_key,
+    );
+
+    const writeHost =
+      this.options.writeHostSecret ??
+      ((args: {
+        stateDbPath: string;
+        plaintext: string;
+        extensionId: string;
+      }) => ensureHostChatLmSecret(args));
+    await writeHost({
+      stateDbPath: hostStateDbPath(userDir),
+      plaintext: redeemed.api_key,
+      extensionId: this.options.extensionId,
+    });
+
+    this.classLabel =
+      [redeemed.session.class_name, redeemed.session.name].filter(Boolean).join(" · ") ||
+      undefined;
+    this.expiresAt = redeemed.session.expires_at;
+    if (this.classLabel) {
+      await this.options.classLabelStore?.set(this.classLabel);
+    } else {
+      await this.options.classLabelStore?.clear();
+    }
+    this.status = "ready";
+    this.detail = classroomApiKeyReadyDetail();
+    this.emit();
+    return { needsReload: true };
+  }
+
+  private failRedeem(err: unknown): RouterLaneActionResult {
+    const message = err instanceof Error ? err.message : String(err);
+    this.status = "error";
+    this.detail = message;
+    this.emit();
+    return { needsReload: false };
   }
 
   private blockIfUnsupported(): boolean {

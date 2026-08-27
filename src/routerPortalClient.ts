@@ -16,6 +16,10 @@ export type RouterPortalClient = {
     handoffToken: string,
     inviteCode: string,
   ) => Promise<RedeemResult>;
+  redeemWithNickname: (
+    inviteCode: string,
+    nickname: string,
+  ) => Promise<RedeemResult>;
   fetchCourseCatalogYaml: (apiKey: string) => Promise<string>;
 };
 
@@ -36,27 +40,17 @@ export function createRouterPortalClient(baseUrl: string): RouterPortalClient {
     },
 
     async redeemWithHandoff(handoffToken, inviteCode) {
-      const res = await fetch(`${root}/extension/sessions/redeem`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          handoff_token: handoffToken,
-          invite_code: inviteCode,
-        }),
+      return postRedeem(root, "/extension/sessions/redeem", {
+        handoff_token: handoffToken,
+        invite_code: inviteCode,
       });
-      if (!res.ok) {
-        let detail = `HTTP ${res.status}`;
-        try {
-          const body = (await res.json()) as { detail?: string };
-          if (body.detail) {
-            detail = String(body.detail);
-          }
-        } catch {
-          // keep status
-        }
-        throw new Error(detail);
-      }
-      return (await res.json()) as RedeemResult;
+    },
+
+    async redeemWithNickname(inviteCode, nickname) {
+      return postRedeem(root, "/extension/sessions/nickname-redeem", {
+        invite_code: inviteCode,
+        nickname,
+      });
     },
 
     async fetchCourseCatalogYaml(apiKey) {
@@ -93,3 +87,29 @@ export function defaultRouterBaseUrl(
   }
   return "https://ai.vanscoding.com";
 }
+
+async function postRedeem(
+  root: string,
+  path: string,
+  payload: Record<string, string>,
+): Promise<RedeemResult> {
+  const res = await fetch(`${root}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: string };
+      if (body.detail) {
+        detail = String(body.detail);
+      }
+    } catch {
+      // keep status
+    }
+    throw new Error(detail);
+  }
+  return (await res.json()) as RedeemResult;
+}
+
