@@ -1,0 +1,44 @@
+# Labels used by Matt Pocock /triage and /wayfinder.
+# Synced by .github/workflows/sync-labels.yml. Does not delete other labels.
+
+# Category roles (GitHub defaults; triage requires both)
+- name: bug
+  color: "d73a4a"
+  description: Something isn't working
+- name: enhancement
+  color: "a2eeef"
+  description: New feature or request
+
+# State roles
+- name: needs-triage
+  color: "FBCA04"
+  description: Maintainer needs to evaluate this issue
+- name: needs-info
+  color: "D876E3"
+  description: Waiting on reporter for more information
+- name: ready-for-agent
+  color: "0E8A16"
+  description: Fully specified, ready for an AFK agent
+- name: ready-for-human
+  color: "1D76DB"
+  description: Requires human implementation
+- name: wontfix
+  color: "ffffff"
+  description: This will not be worked on
+
+# Wayfinder
+- name: "wayfinder:map"
+  color: "5319E7"
+  description: Wayfinder map issue
+- name: "wayfinder:research"
+  color: "C5DEF5"
+  description: Wayfinder research ticket
+- name: "wayfinder:prototype"
+  color: "C5DEF5"
+  description: Wayfinder prototype ticket
+- name: "wayfinder:grilling"
+  color: "C5DEF5"
+  description: Wayfinder grilling ticket
+- name: "wayfinder:task"
+  color: "C5DEF5"
+  description: Wayfinder task ticket

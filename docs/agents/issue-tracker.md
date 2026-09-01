@@ -46,13 +46,13 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 ## Required labels
 
-Create these GitHub labels if they are missing. `/triage` and `/wayfinder` apply them by name.
+Label names live in `.github/labels.yml` and are synced by `.github/workflows/sync-labels.yml` (does not delete other labels). `/triage` and `/wayfinder` apply them by name.
+
+**Category:** `bug`, `enhancement`
 
 **Triage:** `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`
 
 **Wayfinder:** `wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, `wayfinder:task`
-
-This repo already has `ready-for-agent` and `wontfix`. The others need to be created in GitHub Settings → Labels.
 
 ## Historical local tickets
 
