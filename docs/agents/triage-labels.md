@@ -1,8 +1,6 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
-
-This repo tracks work as local markdown under `.scratch/`. Record triage state as a `Status:` line near the top of each issue file, using the strings in the right-hand column.
+The skills speak in terms of five canonical triage roles. This file maps those roles to the actual GitHub label strings used in this repo.
 
 | Label in mattpocock/skills | Label in our tracker | Meaning                                  |
 | -------------------------- | -------------------- | ---------------------------------------- |
