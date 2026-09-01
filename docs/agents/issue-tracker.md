@@ -48,6 +48,12 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 Label names live in `.github/labels.yml` and are synced by `.github/workflows/sync-labels.yml` (does not delete other labels). `/triage` and `/wayfinder` apply them by name.
 
+To create or update them immediately (needs `gh` with Issues write):
+
+```bash
+bash scripts/sync-github-labels.sh
+```
+
 **Category:** `bug`, `enhancement`
 
 **Triage:** `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`
