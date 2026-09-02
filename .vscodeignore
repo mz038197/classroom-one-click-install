@@ -1,11 +1,16 @@
 .vscode/**
 .github/**
 .scratch/**
+.agents/**
 src/**
 docs/**
 samples/**
+scripts/**
 # yaml 的 browser 建置不進 extension host
 node_modules/yaml/browser/**
+node_modules/yaml/README.md
+node_modules/yaml/bin.mjs
+node_modules/yaml/dist/cli.mjs
 out/test/**
 **/*.ts
 **/*.map
@@ -13,7 +18,9 @@ out/test/**
 tsconfig.json
 CONTEXT.md
 README.md
+AGENTS.md
 EXTENSION_README.md
+skills-lock.json
 **/tsconfig.json
 **/*.test.js
 **/*.vsix
