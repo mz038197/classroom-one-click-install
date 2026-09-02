@@ -26,7 +26,7 @@
 ### 範圍（MVP）
 
 - VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course，有片段時再加 Snippet Lane）  
-- Router Lane（凡思 VS Code）：預設 Invite Code + Classroom Nickname →「連線」→ Nickname Redeem → BYOK Setup。Google → Sign-in Handoff 為次要「使用 Google 登入」，點入後才露出一次性貼碼與「貼上並完成連線」。Pegasi Router Lane 仍為 Invite Code →「連線登入」→ Google → Sign-in Handoff。Cursor 不自動 BYOK，也不做 Nickname Redeem。見 [ADR 0013](./adr/0013-vans-nickname-redeem.md)、[ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
+- Router Lane（凡思 VS Code）：預設 Invite Code + Classroom Nickname →「連線」→ Nickname Redeem → BYOK Setup。Google → Sign-in Handoff 為次要「使用 Google 登入」，點入後才露出一次性貼碼與「貼上並完成連線」。Pegasi Router Lane 仍為 Invite Code →「連線登入」→ Google → Sign-in Handoff。Cursor 不自動 BYOK，也不做 Nickname Redeem。BYOK 寫入帶 Classroom API Key 的 `GET /extension/chat-language-models`（Session Model Allowlist；未設定＝Template 全集）。見 [ADR 0014](./adr/0014-session-model-allowlist.md)、[ADR 0013](./adr/0013-vans-nickname-redeem.md)、[ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
 - 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：載入 Session／本機 Course Catalog，執行其中的整段 `command`  
 - 本課片段：同一份 Catalog 的 `snippets`，側欄複製完整 `body`（不執行、不寫檔）  
@@ -46,7 +46,8 @@
 - 本課片段插入游標／依路徑寫檔；依進度解鎖或老師即時推送  
 - `pegasi_router` 的 `snippets` 存檔 round-trip（本期只改 `vans_coding_router`；Pegasi 老師寫入的片段存檔仍會被默刪）  
 - redeem rate limit 等 router 加固（另案）  
-- 以 Portal 網頁兌換／下載 install 腳本為課堂主路徑（改為備援）  
+- 以 Portal 網頁兌換／下載 install 腳本為課堂主路徑（改為備援）
+- Portal Session 設定頁、router 拒絕清單外模型、`install-vscode-models.cmd` 改寫（屬 Router 專案；本擴充只消費帶 key 的模型 GET）  
 
 ### 尚未定案（實作時可先採合理預設，或另開決策）
 
@@ -70,7 +71,7 @@
 | Environment Tool | uv／git／Node.js |
 | Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml`（`actions`＋選填 `snippets`） |
 | Router Lane／Environment Lane／Course Lane／Snippet Lane | 側邊欄各區（Snippet Lane 無片段時不出現） |
-| Invite Code／Classroom Nickname／Nickname Redeem／Classroom API Key／Sign-in Handoff／BYOK Setup | 見 [`CONTEXT.md`](../CONTEXT.md) |
+| Invite Code／Classroom Nickname／Nickname Redeem／Classroom API Key／Sign-in Handoff／BYOK Setup／Session Model Allowlist／Router Model Template | 見 [`CONTEXT.md`](../CONTEXT.md) |
 | Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；只服務 Environment Lane 徽章，不是 Course Lane 總開關，也不用來啟用／禁用單一 Install Action |
 
 ---

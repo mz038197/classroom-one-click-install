@@ -28,6 +28,10 @@ function providerKey(provider: ChatLanguageModelProvider): string {
   return `${provider.vendor ?? ""}\0${provider.name ?? ""}`;
 }
 
+function isClassroomProvider(provider: ChatLanguageModelProvider): boolean {
+  return provider.name === "VCRouter" && provider.vendor === "customendpoint";
+}
+
 function patchModelFromTemplate(
   existing: Record<string, unknown>,
   template: Record<string, unknown>,
@@ -81,6 +85,12 @@ export function mergeChatLanguageModels(
     if (!Array.isArray(templateModels)) {
       continue;
     }
+    const allowedIds = new Set(
+      templateModels
+        .filter((m): m is Record<string, unknown> => !!m && typeof m === "object")
+        .map((m) => m.id)
+        .filter((id): id is string => typeof id === "string" && !!id),
+    );
     for (const templateModel of templateModels) {
       if (!templateModel || typeof templateModel !== "object") {
         continue;
@@ -105,6 +115,21 @@ export function mergeChatLanguageModels(
         modelIds.add(modelId);
       }
     }
+    found.models = existingModels.filter((existingModel) => {
+      if (!existingModel || typeof existingModel !== "object") {
+        return false;
+      }
+      const id = (existingModel as Record<string, unknown>).id;
+      return typeof id === "string" && allowedIds.has(id);
+    });
+  }
+
+  if (!template.some((provider) => isClassroomProvider(provider))) {
+    for (const provider of merged) {
+      if (isClassroomProvider(provider)) {
+        provider.models = [];
+      }
+    }
   }
 
   return merged;
@@ -120,11 +145,36 @@ export function applyApiKeyToTemplate(
     (template ?? providers).map((p) => providerKey(p)),
   );
   return providers.map((provider) => {
-    if (keys.has(providerKey(provider))) {
+    if (keys.has(providerKey(provider)) || isClassroomProvider(provider)) {
       return { ...provider, apiKey };
     }
     return provider;
   });
+}
+
+/** VCRouter model ids, for Allowlist sync diffs. */
+export function classroomModelSignature(
+  providers: ChatLanguageModelProvider[] | null | undefined,
+): string {
+  const ids: string[] = [];
+  for (const provider of providers ?? []) {
+    if (!provider || typeof provider !== "object") {
+      continue;
+    }
+    if (!isClassroomProvider(provider) || !Array.isArray(provider.models)) {
+      continue;
+    }
+    for (const model of provider.models) {
+      if (!model || typeof model !== "object") {
+        continue;
+      }
+      const id = (model as Record<string, unknown>).id;
+      if (typeof id === "string" && id) {
+        ids.push(`${providerKey(provider)}\0${id}`);
+      }
+    }
+  }
+  return ids.sort().join("\n");
 }
 
 export function mergeByokConfig(

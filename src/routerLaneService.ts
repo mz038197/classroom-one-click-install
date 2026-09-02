@@ -94,7 +94,9 @@ export class RouterLaneService {
         userDir: string;
         template: ChatLanguageModelProvider[];
         apiKey: string;
-      }) => Promise<string>;
+      }) => Promise<
+        string | { path: string; classroomModelsChanged?: boolean }
+      >;
       /** Ensure Host chat.lm.secret.* row exists (promote-with-retry / encrypt fallback). */
       writeHostSecret?: (args: {
         stateDbPath: string;
@@ -245,9 +247,9 @@ export class RouterLaneService {
     this.emit();
 
     try {
-      const template = await this.client.fetchChatLanguageModelsTemplate();
+      await this.client.fetchChatLanguageModelsTemplate();
       const redeemed = await this.client.redeemWithNickname(invite, nickname);
-      return await this.applyRedeemed(redeemed, template);
+      return await this.applyRedeemedWithSessionModels(redeemed);
     } catch (err) {
       return this.failRedeem(err);
     }
@@ -279,10 +281,10 @@ export class RouterLaneService {
     const handoff = this.pendingHandoff;
     try {
       // Fetch template before redeem so a template failure does not burn the handoff.
-      const template = await this.client.fetchChatLanguageModelsTemplate();
+      await this.client.fetchChatLanguageModelsTemplate();
       const redeemed = await this.client.redeemWithHandoff(handoff, invite);
       this.pendingHandoff = undefined;
-      return await this.applyRedeemed(redeemed, template);
+      return await this.applyRedeemedWithSessionModels(redeemed);
     } catch (err) {
       return this.failRedeem(err);
     }
@@ -332,6 +334,34 @@ export class RouterLaneService {
     }
   }
 
+  async syncSessionModels(): Promise<RouterLaneActionResult> {
+    if (this.blockIfUnsupported()) {
+      return { needsReload: false };
+    }
+    const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
+    const key = await this.options.secretStore.get(secretKey);
+    if (!isPlainClassroomApiKey(key)) {
+      return { needsReload: false };
+    }
+    try {
+      const sessionModels = await this.client.fetchChatLanguageModelsTemplate(key);
+      const write = this.options.writeByok ?? writeByokFile;
+      const result = await write({
+        userDir: this.options.resolveUserDir(),
+        template: sessionModels,
+        apiKey: toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY),
+      });
+      const changed =
+        typeof result === "object" &&
+        result !== null &&
+        "classroomModelsChanged" in result &&
+        Boolean(result.classroomModelsChanged);
+      return { needsReload: changed };
+    } catch {
+      return { needsReload: false };
+    }
+  }
+
   async restoreFromSecrets(): Promise<void> {
     if (this.unsupportedHost) {
       return;
@@ -355,18 +385,34 @@ export class RouterLaneService {
     return this.nicknameRedeemEnabled ? IDLE_NICKNAME_DETAIL : IDLE_GOOGLE_DETAIL;
   }
 
+  private async applyRedeemedWithSessionModels(
+    redeemed: RedeemResult,
+  ): Promise<RouterLaneActionResult> {
+    let sessionModels: ChatLanguageModelProvider[] | undefined;
+    try {
+      sessionModels = await this.client.fetchChatLanguageModelsTemplate(
+        redeemed.api_key,
+      );
+    } catch {
+      sessionModels = undefined;
+    }
+    return this.applyRedeemed(redeemed, sessionModels);
+  }
+
   private async applyRedeemed(
     redeemed: RedeemResult,
-    template: ChatLanguageModelProvider[],
+    template: ChatLanguageModelProvider[] | undefined,
   ): Promise<RouterLaneActionResult> {
     const apiKeyRef = toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY);
     const write = this.options.writeByok ?? writeByokFile;
     const userDir = this.options.resolveUserDir();
-    await write({
-      userDir,
-      template,
-      apiKey: apiKeyRef,
-    });
+    if (template) {
+      await write({
+        userDir,
+        template,
+        apiKey: apiKeyRef,
+      });
+    }
 
     const secretKey = this.options.apiKeySecretKey ?? "classroomApiKey";
     await this.options.secretStore.store(secretKey, redeemed.api_key);

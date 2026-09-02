@@ -527,6 +527,176 @@ describe("RouterLaneService", () => {
     assert.equal(storedLabel, undefined);
   });
 
+  it("writes the Bearer Session Model Allowlist, not the precheck Template", async () => {
+    const calls: Array<string | undefined> = [];
+    let writtenIds: unknown[] = [];
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
+        calls.push(apiKey);
+        if (apiKey) {
+          return [
+            {
+              name: "VCRouter",
+              vendor: "customendpoint",
+              models: [{ id: "ollama_cloud@mini:cloud", name: "mini" }],
+            },
+          ];
+        }
+        return [
+          {
+            name: "VCRouter",
+            vendor: "customendpoint",
+            models: [
+              { id: "ollama_cloud@opus:cloud", name: "opus" },
+              { id: "ollama_cloud@mini:cloud", name: "mini" },
+            ],
+          },
+        ];
+      },
+      redeemWithNickname: async () => ({
+        api_key: "vcr_sk_allow",
+        session: { class_name: "Demo", name: "Week 1" },
+      }),
+    });
+    const { options } = byokOptions({
+      writeByok: async ({
+        template,
+      }: {
+        template: Array<{ models?: Array<{ id?: string }> }>;
+      }) => {
+        writtenIds = template[0]?.models?.map((m) => m.id) ?? [];
+        return "/tmp/Code/User/chatLanguageModels.json";
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    lane.setNickname("Ada");
+    await lane.nicknameRedeemAndSetup();
+    assert.deepEqual(calls, [undefined, "vcr_sk_allow"]);
+    assert.deepEqual(writtenIds, ["ollama_cloud@mini:cloud"]);
+    assert.equal(lane.getView().status, "ready");
+  });
+
+  it("does not redeem when Router Model Template precheck fails", async () => {
+    let redeemed = false;
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async () => {
+        throw new Error("無法取得模型清單（HTTP 503）");
+      },
+      redeemWithNickname: async () => {
+        redeemed = true;
+        return { api_key: "vcr_sk_x", session: {} };
+      },
+    });
+    const { options } = byokOptions();
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    lane.setNickname("Ada");
+    const result = await lane.nicknameRedeemAndSetup();
+    assert.equal(redeemed, false);
+    assert.equal(lane.getView().status, "error");
+    assert.match(lane.getView().detail, /無法取得模型清單/);
+    assert.equal(result.needsReload, false);
+  });
+
+  it("keeps the Classroom API Key and skips BYOK write when the Allowlist GET fails", async () => {
+    let writes = 0;
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
+        if (apiKey) {
+          throw new Error("無法取得模型清單（HTTP 500）");
+        }
+        return [
+          { name: "VCRouter", vendor: "customendpoint", apiKey: "", models: [] },
+        ];
+      },
+      redeemWithNickname: async () => ({
+        api_key: "vcr_sk_kept",
+        session: { class_name: "Demo", name: "Week 1" },
+      }),
+    });
+    const { secrets, options } = byokOptions({
+      writeByok: async () => {
+        writes += 1;
+        return "/tmp/Code/User/chatLanguageModels.json";
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    lane.setNickname("Ada");
+    const result = await lane.nicknameRedeemAndSetup();
+    assert.equal(writes, 0);
+    assert.equal(secrets.get("classroomApiKey"), "vcr_sk_kept");
+    assert.equal(lane.getView().status, "ready");
+    assert.equal(lane.getView().classLabel, "Demo · Week 1");
+    assert.equal(result.needsReload, true);
+  });
+
+  it("syncSessionModels writes the Allowlist and asks restart only when models change", async () => {
+    const { secrets, options } = byokOptions({
+      writeByok: async () => ({
+        path: "/tmp/Code/User/chatLanguageModels.json",
+        classroomModelsChanged: true,
+      }),
+    });
+    secrets.set("classroomApiKey", "vcr_sk_sync");
+    let fetchedWith: string | undefined;
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
+        fetchedWith = apiKey;
+        return [
+          {
+            name: "VCRouter",
+            vendor: "customendpoint",
+            models: [{ id: "mini", name: "mini" }],
+          },
+        ];
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    await lane.restoreFromSecrets();
+    const result = await lane.syncSessionModels();
+    assert.equal(fetchedWith, "vcr_sk_sync");
+    assert.equal(result.needsReload, true);
+
+    const { secrets: secrets2, options: options2 } = byokOptions({
+      writeByok: async () => ({
+        path: "/tmp/Code/User/chatLanguageModels.json",
+        classroomModelsChanged: false,
+      }),
+    });
+    secrets2.set("classroomApiKey", "vcr_sk_sync");
+    const lane2 = new RouterLaneService(client, options2);
+    await lane2.restoreFromSecrets();
+    const unchanged = await lane2.syncSessionModels();
+    assert.equal(unchanged.needsReload, false);
+  });
+
+  it("syncSessionModels does not overwrite models when the Allowlist GET fails", async () => {
+    let writes = 0;
+    const { secrets, options } = byokOptions({
+      writeByok: async () => {
+        writes += 1;
+        return {
+          path: "/tmp/Code/User/chatLanguageModels.json",
+          classroomModelsChanged: true,
+        };
+      },
+    });
+    secrets.set("classroomApiKey", "vcr_sk_sync");
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async () => {
+        throw new Error("無法取得模型清單（HTTP 500）");
+      },
+    });
+    const lane = new RouterLaneService(client, options);
+    await lane.restoreFromSecrets();
+    const result = await lane.syncSessionModels();
+    assert.equal(writes, 0);
+    assert.equal(result.needsReload, false);
+    assert.equal(lane.getView().status, "ready");
+  });
+
   it("Pegasi path keeps Google-first idle when Nickname Redeem is off", () => {
     const { options } = baseOptions({ enableNicknameRedeem: false });
     const lane = new RouterLaneService(stubClient(), options);

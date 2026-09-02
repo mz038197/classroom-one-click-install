@@ -11,7 +11,9 @@ export type RedeemResult = {
 };
 
 export type RouterPortalClient = {
-  fetchChatLanguageModelsTemplate: () => Promise<ChatLanguageModelProvider[]>;
+  fetchChatLanguageModelsTemplate: (
+    apiKey?: string,
+  ) => Promise<ChatLanguageModelProvider[]>;
   redeemWithHandoff: (
     handoffToken: string,
     inviteCode: string,
@@ -27,8 +29,14 @@ export function createRouterPortalClient(baseUrl: string): RouterPortalClient {
   const root = baseUrl.replace(/\/+$/, "");
 
   return {
-    async fetchChatLanguageModelsTemplate() {
-      const res = await fetch(`${root}/extension/chat-language-models`);
+    async fetchChatLanguageModelsTemplate(apiKey?: string) {
+      const headers: Record<string, string> = {};
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+      const res = await fetch(`${root}/extension/chat-language-models`, {
+        headers,
+      });
       if (!res.ok) {
         throw new Error(`無法取得模型清單（HTTP ${res.status}）`);
       }

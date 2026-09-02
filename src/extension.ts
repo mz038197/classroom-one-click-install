@@ -228,7 +228,7 @@ export function activate(context: vscode.ExtensionContext): void {
         await afterRouterAction(result, BYOK_RESTART_MESSAGE, true);
       },
       retryRemoteCatalog: async () => {
-        reloadCatalog();
+        reloadRemoteSession();
       },
       copySnippet: async (snippetId) => {
         const result = await copyLessonSnippet({
@@ -253,6 +253,17 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const reloadCatalog = (): void => {
     void courseLane.reload().then(refreshUi);
+  };
+
+  const reloadRemoteSession = (): void => {
+    void (async () => {
+      await courseLane.reload();
+      const result = await routerLane.syncSessionModels();
+      refreshUi();
+      if (result.needsReload) {
+        await offerFullRestart(BYOK_RESTART_MESSAGE);
+      }
+    })();
   };
 
   const recheckEnvironment = async (): Promise<void> => {
@@ -340,7 +351,7 @@ export function activate(context: vscode.ExtensionContext): void {
   watchCatalog();
   void recheckEnvironment();
   void routerLane.restoreFromSecrets().then(() => {
-    reloadCatalog();
+    reloadRemoteSession();
     refreshUi();
   });
 

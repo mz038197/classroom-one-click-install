@@ -1,7 +1,12 @@
 import fs from "node:fs/promises";
 import type { ChatLanguageModelProvider } from "./byokSetup";
-import { mergeByokConfig } from "./byokSetup";
+import { classroomModelSignature, mergeByokConfig } from "./byokSetup";
 import { chatLanguageModelsPath } from "./editorUserPath";
+
+export type WriteByokResult = {
+  path: string;
+  classroomModelsChanged: boolean;
+};
 
 export async function writeByokFile(options: {
   userDir: string;
@@ -10,7 +15,7 @@ export async function writeByokFile(options: {
   readFile?: (path: string) => Promise<string>;
   writeFile?: (path: string, data: string) => Promise<void>;
   mkdir?: (path: string) => Promise<void>;
-}): Promise<string> {
+}): Promise<WriteByokResult> {
   const target = chatLanguageModelsPath(options.userDir);
   const readFile = options.readFile ?? ((p) => fs.readFile(p, "utf8"));
   const writeFile = options.writeFile ?? ((p, d) => fs.writeFile(p, d, "utf8"));
@@ -40,7 +45,9 @@ export async function writeByokFile(options: {
   }
 
   const merged = mergeByokConfig(existing, options.template, options.apiKey);
+  const classroomModelsChanged =
+    classroomModelSignature(existing) !== classroomModelSignature(merged);
   await mkdir(options.userDir);
   await writeFile(target, `${JSON.stringify(merged, null, 2)}\n`);
-  return target;
+  return { path: target, classroomModelsChanged };
 }

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyApiKeyToTemplate, mergeByokConfig } from "../byokSetup";
+import {
+  applyApiKeyToTemplate,
+  classroomModelSignature,
+  mergeByokConfig,
+} from "../byokSetup";
 
 describe("mergeByokConfig", () => {
   it("merges template providers and writes api key onto matching vendor/name", () => {
@@ -65,6 +69,85 @@ describe("mergeByokConfig", () => {
     assert.equal(merged[0]?.apiKey, "vcr_sk_new");
     const model = (merged[0]?.models as Array<Record<string, unknown>>)[0];
     assert.equal(model?.toolCalling, true);
+  });
+
+  it("drops VCRouter models that are not on the Session Model Allowlist", () => {
+    const existing = [
+      {
+        name: "OpenRouter",
+        vendor: "openrouter",
+        apiKey: "keep",
+        models: [{ id: "keep-or", name: "keep-or" }],
+      },
+      {
+        name: "VCRouter",
+        vendor: "customendpoint",
+        apiKey: "old",
+        models: [
+          { id: "ollama_cloud@opus:cloud", name: "opus" },
+          { id: "ollama_cloud@mini:cloud", name: "mini" },
+        ],
+      },
+    ];
+    const template = [
+      {
+        name: "VCRouter",
+        vendor: "customendpoint",
+        apiKey: "",
+        models: [{ id: "ollama_cloud@mini:cloud", name: "mini" }],
+      },
+    ];
+
+    const merged = mergeByokConfig(existing, template, "vcr_sk_new");
+    assert.equal(merged.length, 2);
+    assert.equal(merged[0]?.apiKey, "keep");
+    const ids = (merged[1]?.models as Array<Record<string, unknown>>).map(
+      (m) => m.id,
+    );
+    assert.deepEqual(ids, ["ollama_cloud@mini:cloud"]);
+    assert.equal(merged[1]?.apiKey, "vcr_sk_new");
+  });
+
+  it("clears VCRouter models when the Allowlist payload has no classroom provider", () => {
+    const existing = [
+      {
+        name: "OpenRouter",
+        vendor: "openrouter",
+        apiKey: "keep",
+        models: [{ id: "keep-or", name: "keep-or" }],
+      },
+      {
+        name: "VCRouter",
+        vendor: "customendpoint",
+        apiKey: "old",
+        models: [{ id: "ollama_cloud@opus:cloud", name: "opus" }],
+      },
+    ];
+    const merged = mergeByokConfig(existing, [], "vcr_sk_new");
+    assert.equal(merged[0]?.apiKey, "keep");
+    assert.deepEqual(merged[1]?.models, []);
+    assert.equal(merged[1]?.apiKey, "vcr_sk_new");
+  });
+});
+
+describe("classroomModelSignature", () => {
+  it("changes when a VCRouter model is removed from the Allowlist", () => {
+    const before = classroomModelSignature([
+      {
+        name: "VCRouter",
+        vendor: "customendpoint",
+        models: [{ id: "opus" }, { id: "mini" }],
+      },
+    ]);
+    const after = classroomModelSignature([
+      {
+        name: "VCRouter",
+        vendor: "customendpoint",
+        models: [{ id: "mini" }],
+      },
+    ]);
+    assert.notEqual(before, after);
+    assert.equal(after, "customendpoint\0VCRouter\0mini");
   });
 });
 
