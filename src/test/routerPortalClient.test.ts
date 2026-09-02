@@ -70,7 +70,7 @@ describe("createRouterPortalClient chat-language-models", () => {
     }
   });
 
-  it("omits Authorization when prechecking the Router Model Template", async () => {
+  it("omits Authorization when fetching the Router Model Template without a Classroom API Key", async () => {
     const original = globalThis.fetch;
     let hasAuthHeader = false;
     globalThis.fetch = (async (_input: string | URL, init?: RequestInit) => {

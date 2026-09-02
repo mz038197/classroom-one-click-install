@@ -247,7 +247,6 @@ export class RouterLaneService {
     this.emit();
 
     try {
-      await this.client.fetchChatLanguageModelsTemplate();
       const redeemed = await this.client.redeemWithNickname(invite, nickname);
       return await this.applyRedeemedWithSessionModels(redeemed);
     } catch (err) {
@@ -280,8 +279,6 @@ export class RouterLaneService {
 
     const handoff = this.pendingHandoff;
     try {
-      // Fetch template before redeem so a template failure does not burn the handoff.
-      await this.client.fetchChatLanguageModelsTemplate();
       const redeemed = await this.client.redeemWithHandoff(handoff, invite);
       this.pendingHandoff = undefined;
       return await this.applyRedeemedWithSessionModels(redeemed);
@@ -401,15 +398,15 @@ export class RouterLaneService {
 
   private async applyRedeemed(
     redeemed: RedeemResult,
-    template: ChatLanguageModelProvider[] | undefined,
+    sessionModels: ChatLanguageModelProvider[] | undefined,
   ): Promise<RouterLaneActionResult> {
     const apiKeyRef = toChatLmSecretInputRef(CLASSROOM_CHAT_LM_SECRET_KEY);
     const write = this.options.writeByok ?? writeByokFile;
     const userDir = this.options.resolveUserDir();
-    if (template) {
+    if (sessionModels) {
       await write({
         userDir,
-        template,
+        template: sessionModels,
         apiKey: apiKeyRef,
       });
     }
@@ -446,7 +443,7 @@ export class RouterLaneService {
     this.status = "ready";
     this.detail = classroomApiKeyReadyDetail();
     this.emit();
-    return { needsReload: true };
+    return { needsReload: sessionModels !== undefined };
   }
 
   private failRedeem(err: unknown): RouterLaneActionResult {

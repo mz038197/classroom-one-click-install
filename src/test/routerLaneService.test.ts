@@ -527,7 +527,7 @@ describe("RouterLaneService", () => {
     assert.equal(storedLabel, undefined);
   });
 
-  it("writes the Bearer Session Model Allowlist, not the precheck Template", async () => {
+  it("writes the Session Model Allowlist, not the Router Model Template", async () => {
     const calls: Array<string | undefined> = [];
     let writtenIds: unknown[] = [];
     const client = stubClient({
@@ -542,16 +542,7 @@ describe("RouterLaneService", () => {
             },
           ];
         }
-        return [
-          {
-            name: "VCRouter",
-            vendor: "customendpoint",
-            models: [
-              { id: "ollama_cloud@opus:cloud", name: "opus" },
-              { id: "ollama_cloud@mini:cloud", name: "mini" },
-            ],
-          },
-        ];
+        throw new Error("Router Model Template GET should not run on connect");
       },
       redeemWithNickname: async () => ({
         api_key: "vcr_sk_allow",
@@ -572,20 +563,28 @@ describe("RouterLaneService", () => {
     lane.setInviteCode("ABC12345");
     lane.setNickname("Ada");
     await lane.nicknameRedeemAndSetup();
-    assert.deepEqual(calls, [undefined, "vcr_sk_allow"]);
+    assert.deepEqual(calls, ["vcr_sk_allow"]);
     assert.deepEqual(writtenIds, ["ollama_cloud@mini:cloud"]);
     assert.equal(lane.getView().status, "ready");
   });
 
-  it("does not redeem when Router Model Template precheck fails", async () => {
+  it("redeems when an unauthenticated Router Model Template GET would fail", async () => {
     let redeemed = false;
     const client = stubClient({
-      fetchChatLanguageModelsTemplate: async () => {
-        throw new Error("無法取得模型清單（HTTP 503）");
+      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
+        if (!apiKey) {
+          throw new Error("無法取得模型清單（HTTP 503）");
+        }
+        return [
+          { name: "VCRouter", vendor: "customendpoint", models: [] },
+        ];
       },
       redeemWithNickname: async () => {
         redeemed = true;
-        return { api_key: "vcr_sk_x", session: {} };
+        return {
+          api_key: "vcr_sk_x",
+          session: { class_name: "Demo", name: "Week 1" },
+        };
       },
     });
     const { options } = byokOptions();
@@ -593,22 +592,45 @@ describe("RouterLaneService", () => {
     lane.setInviteCode("ABC12345");
     lane.setNickname("Ada");
     const result = await lane.nicknameRedeemAndSetup();
-    assert.equal(redeemed, false);
-    assert.equal(lane.getView().status, "error");
-    assert.match(lane.getView().detail, /無法取得模型清單/);
-    assert.equal(result.needsReload, false);
+    assert.equal(redeemed, true);
+    assert.equal(lane.getView().status, "ready");
+    assert.equal(lane.getView().detail, "Classroom API Key 已設定。");
+    assert.equal(result.needsReload, true);
+  });
+
+  it("Sign-in Handoff redeems when an unauthenticated Router Model Template GET would fail", async () => {
+    let redeemed = false;
+    const client = stubClient({
+      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
+        if (!apiKey) {
+          throw new Error("無法取得模型清單（HTTP 503）");
+        }
+        return [
+          { name: "VCRouter", vendor: "customendpoint", models: [] },
+        ];
+      },
+      redeemWithHandoff: async () => {
+        redeemed = true;
+        return {
+          api_key: "vcr_sk_handoff",
+          session: { class_name: "Demo", name: "Week 1" },
+        };
+      },
+    });
+    const { options } = byokOptions();
+    const lane = new RouterLaneService(client, options);
+    lane.setInviteCode("ABC12345");
+    const result = await lane.acceptHandoffInput(sampleToken);
+    assert.equal(redeemed, true);
+    assert.equal(lane.getView().status, "ready");
+    assert.equal(result.needsReload, true);
   });
 
   it("keeps the Classroom API Key and skips BYOK write when the Allowlist GET fails", async () => {
     let writes = 0;
     const client = stubClient({
-      fetchChatLanguageModelsTemplate: async (apiKey?: string) => {
-        if (apiKey) {
-          throw new Error("無法取得模型清單（HTTP 500）");
-        }
-        return [
-          { name: "VCRouter", vendor: "customendpoint", apiKey: "", models: [] },
-        ];
+      fetchChatLanguageModelsTemplate: async () => {
+        throw new Error("無法取得模型清單（HTTP 500）");
       },
       redeemWithNickname: async () => ({
         api_key: "vcr_sk_kept",
@@ -629,7 +651,8 @@ describe("RouterLaneService", () => {
     assert.equal(secrets.get("classroomApiKey"), "vcr_sk_kept");
     assert.equal(lane.getView().status, "ready");
     assert.equal(lane.getView().classLabel, "Demo · Week 1");
-    assert.equal(result.needsReload, true);
+    assert.equal(lane.getView().detail, "Classroom API Key 已設定。");
+    assert.equal(result.needsReload, false);
   });
 
   it("syncSessionModels writes the Allowlist and asks restart only when models change", async () => {
