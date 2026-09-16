@@ -27,7 +27,7 @@
 
 - VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course，有片段時再加 Snippet Lane）  
 - Router Lane（凡思 VS Code）：預設 Invite Code + Classroom Nickname →「連線」→ Nickname Redeem → BYOK Setup。Google → Sign-in Handoff 為次要「使用 Google 登入」，點入後才露出一次性貼碼與「貼上並完成連線」。Pegasi Router Lane 仍為 Invite Code →「連線登入」→ Google → Sign-in Handoff。Cursor 不自動 BYOK，也不做 Nickname Redeem。BYOK 寫入帶 Classroom API Key 的 `GET /extension/chat-language-models`（Session Model Allowlist；未設定＝Template 全集）。見 [ADR 0014](./adr/0014-session-model-allowlist.md)、[ADR 0013](./adr/0013-vans-nickname-redeem.md)、[ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
-- 環境工具：uv、git、Node.js、PowerShell 7（偵測、安裝、重新檢查、重新安裝／修復）  
+- 環境工具：uv、git、Node.js、PowerShell 7（偵測、勾選後一次安裝、重新檢查）  
 - 本課動作：載入 Session／本機 Course Catalog，執行其中的整段 `command`  
 - 本課片段：同一份 Catalog 的 `snippets`，側欄複製完整 `body`（不執行、不寫檔）  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
@@ -180,18 +180,21 @@ snippets:
 
 ### 側邊欄狀態
 
-- 就緒：顯示版本號；仍提供「重新安裝／修復」  
-- 未就緒：顯示「未安裝」＋「安裝」  
-- 全域「重新檢查」  
+- 就緒：顯示版本號；預設不勾，可手動勾後走區級安裝當修復  
+- 未就緒／失敗：顯示「未安裝」或失敗＋IT 提示，預勾  
+- 「請重開終端」：不預勾  
+- 列上只有勾選；區級「安裝」與「重新檢查」。空選取時安裝鈕禁用、不提示。  
 
 ### 安裝流程（僅環境工具）
 
-1. 確認（揭示遠端腳本／系統安裝器風險，並顯示將執行的內容或下載路徑）  
-2. 跑該 OS 預設安裝路徑（見下表；macOS Node 見 [ADR 0009](./adr/0009-macos-node-nvm.md)）  
-3. 狀態改為「請重開終端機」——**不要**直接標成功  
-4. 學生重開終端 → 重新檢查 → 成功才就緒  
-5. 權限／MDM 失敗：保留錯誤，提示找 IT；不提權  
-6. 官方安裝器**明確**表示已安裝／不必再裝（本輪：macOS git `xcode-select --install` 的 already installed）→ 視同本次流程成功 →「請重開終端機」；**不要**把泛用結束碼 1 當成已安裝。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)。  
+1. 勾選要裝的 Environment Tool 後按區級「安裝」  
+2. **一次**確認（標題「安裝所選環境工具」；列出此次將執行的命令或將開啟的網址；uv 若有 preview 則附上）  
+3. 依 uv → git → Node.js → PowerShell 7 串行執行有勾的項；失敗即停；只有當前列顯示安裝中；進行中鎖定勾選與安裝鈕  
+4. 成功項改為「請重開終端機」——**不要**直接標成功；未跑到的維持原狀  
+5. 學生重開終端 → 重新檢查 → 成功才就緒  
+6. 權限／MDM 失敗：該項保留錯誤，提示找 IT；不提權；後面的項不開始  
+7. 官方安裝器**明確**表示已安裝／不必再裝（本輪：macOS git `xcode-select --install` 的 already installed）→ 視同本次流程成功 →「請重開終端機」；**不要**把泛用結束碼 1 當成已安裝。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)。  
+8. 命令面板不提供與列按鈕同等的單工具安裝主入口。見 [ADR 0016](./adr/0016-environment-lane-batch-install.md)。  
 
 | 工具 | Windows 預設 | macOS 預設 |
 |---|---|---|
@@ -252,7 +255,7 @@ snippets:
 
 必須涵蓋狀態：
 
-- 環境：版本／未安裝／請重開終端／重新檢查／重新安裝  
+- 環境：勾選、版本／未安裝／請重開終端／失敗、區級安裝與重新檢查  
 - 本課：Action Kind tag、成功、進行中、失敗短提示、確認框（卡片不因缺工具改樣式或加警告）  
 - 本課片段：編號、title、選填 paste_hint、約四行預覽、可展開全文（手風琴）、複製完整 body  
 
@@ -293,7 +296,7 @@ snippets:
 5. **缺工具不鎖本課**：uv／git／Node／PowerShell 7 皆未就緒時，本課 `uv`／`uvx`／含 `git+` 的動作仍可點；確認框不提缺工具；確認後仍送進終端（失敗則一般失敗狀態＋終端原文）。  
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
 7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node／PowerShell 7。  
-8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口；兩大區可各自收合，預設展開。  
+8. **側邊欄 IA**：環境區在本課區之上；勾選後一次安裝與重新檢查；兩大區可各自收合，預設展開。   
 9. **本課片段**：Catalog 含合法 `snippets` 時，本課安裝下方出現「本課片段」；點複製把完整 `body` 寫入剪貼簿且不跳確認；無片段時整區不出現。非法 `snippets` 整份 Catalog 失敗。  
 
 ---
@@ -316,3 +319,4 @@ snippets:
 | — | 本課片段第四區（[ADR 0012](./adr/0012-lesson-snippet-copy-lane.md)） |
 | — | 凡思 VS Code Nickname Redeem（[ADR 0013](./adr/0013-vans-nickname-redeem.md)） |
 | — | PowerShell 7 為第四個 Environment Tool（[ADR 0015](./adr/0015-powershell7-environment-tool.md)） |
+| — | Environment Lane 勾選後一次安裝（[ADR 0016](./adr/0016-environment-lane-batch-install.md)） |

@@ -21,27 +21,36 @@ const routerIdle: RouterLaneView = {
 
 const envReady: EnvironmentLaneView = {
   toolchainReady: true,
+  canInstallSelected: false,
+  selectionLocked: false,
   tools: [
     {
       id: "uv",
       label: "uv",
       status: "ready",
       detail: "0.7.0",
-      actionLabel: "重新安裝／修復",
+      selected: false,
     },
     {
       id: "git",
       label: "git",
       status: "ready",
       detail: "2.45.0",
-      actionLabel: "重新安裝／修復",
+      selected: false,
     },
     {
       id: "node",
       label: "Node.js",
       status: "ready",
       detail: "v22.0.0",
-      actionLabel: "重新安裝／修復",
+      selected: false,
+    },
+    {
+      id: "pwsh",
+      label: "PowerShell 7",
+      status: "ready",
+      detail: "7.4.6",
+      selected: false,
     },
   ],
 };
@@ -79,7 +88,9 @@ describe("buildSidebarViewModel", () => {
     assert.equal(vm.router.showPasteUi, false);
     assert.equal(vm.router.statusLabel, "尚未設定");
     assert.equal(vm.router.canCopyApiKey, false);
-    assert.equal(vm.environment.tools.length, 3);
+    assert.equal(vm.environment.tools.length, 4);
+    assert.equal(vm.environment.installLabel, "安裝");
+    assert.equal(vm.environment.canInstallSelected, false);
     assert.equal(vm.course.actions[0]?.title, "安裝 tools");
     assert.equal(vm.course.actions[0]?.kind, "package");
     assert.equal(vm.course.actions[0]?.kindLabel, "套件");
@@ -235,7 +246,7 @@ describe("buildSidebarViewModel", () => {
       ...envReady,
       toolchainReady: false,
       tools: envReady.tools.map((t, i) =>
-        i === 0 ? { ...t, status: "missing", detail: "未安裝", actionLabel: "安裝" } : t,
+        i === 0 ? { ...t, status: "missing", detail: "未安裝", selected: true } : t,
       ),
     };
     const incomplete = buildSidebarViewModel({
@@ -288,27 +299,36 @@ describe("buildSidebarViewModel", () => {
     const env: EnvironmentLaneView = {
       toolchainReady: false,
       tip: "請重開終端",
+      canInstallSelected: false,
+      selectionLocked: true,
       tools: [
         {
           id: "uv",
           label: "uv",
           status: "installing",
           detail: "安裝中…",
-          actionLabel: "安裝",
+          selected: true,
         },
         {
           id: "git",
           label: "git",
           status: "missing",
           detail: "未安裝",
-          actionLabel: "安裝",
+          selected: true,
         },
         {
           id: "node",
           label: "Node.js",
           status: "ready",
           detail: "v22",
-          actionLabel: "重新安裝／修復",
+          selected: false,
+        },
+        {
+          id: "pwsh",
+          label: "PowerShell 7",
+          status: "missing",
+          detail: "未安裝",
+          selected: true,
         },
       ],
     };
@@ -334,7 +354,9 @@ describe("buildSidebarViewModel", () => {
     });
 
     assert.equal(vm.environment.tools[0]?.busy, true);
-    assert.equal(vm.environment.tools[0]?.canRun, false);
+    assert.equal(vm.environment.tools[0]?.checkboxDisabled, true);
+    assert.equal(vm.environment.canInstallSelected, false);
+    assert.equal(vm.environment.selectionLocked, true);
     assert.equal(vm.course.actions[0]?.busy, true);
     assert.equal(vm.course.actions[0]?.canRun, false);
     assert.ok(vm.environment.tip);

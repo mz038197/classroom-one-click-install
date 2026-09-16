@@ -7,27 +7,40 @@ export type EnvironmentInstallConfirm = {
   detail: string;
 };
 
-/** 確認框文案：揭示風險與將執行／開啟的內容。 */
+export type EnvironmentInstallConfirmItem = {
+  plan: EnvironmentInstallPlan;
+  mode: InstallConfirmMode;
+};
+
+export const BATCH_INSTALL_CONFIRM_TITLE = "安裝所選環境工具";
+
+/** 確認框文案：一批計畫、一次標題，揭示將執行／開啟的內容。 */
 export function buildEnvironmentInstallConfirm(
-  plan: EnvironmentInstallPlan,
-  mode: InstallConfirmMode,
+  items: readonly EnvironmentInstallConfirmItem[],
 ): EnvironmentInstallConfirm {
-  const title =
-    mode === "ready" || mode === "needs-reopen-terminal"
-      ? `重新安裝／修復 ${label(plan.tool)}`
-      : `安裝 ${label(plan.tool)}`;
+  const blocks = items.map(({ plan, mode }) => {
+    const repair =
+      mode === "ready" || mode === "needs-reopen-terminal"
+        ? "（重新安裝／修復）"
+        : "";
+    const action =
+      plan.kind === "shell"
+        ? `將執行：\n${plan.commandOrUrl}`
+        : `將開啟：\n${plan.commandOrUrl}`;
+    const lines = [`${label(plan.tool)}${repair}`, plan.summary, action];
+    if (plan.previewCommand) {
+      lines.push(`先檢視腳本（可選）：\n${plan.previewCommand}`);
+    }
+    return lines.join("\n");
+  });
 
-  const lines = [
-    plan.summary,
-    "",
-    plan.kind === "shell" ? `將執行：\n${plan.commandOrUrl}` : `將開啟：\n${plan.commandOrUrl}`,
-  ];
-  if (plan.previewCommand) {
-    lines.push("", `先檢視腳本（可選）：\n${plan.previewCommand}`);
-  }
-  lines.push("", "完成後請重開整合終端機，再按「重新檢查」。不會嘗試提權；若權限／MDM 阻擋請找 IT。");
-
-  return { title, detail: lines.join("\n") };
+  return {
+    title: BATCH_INSTALL_CONFIRM_TITLE,
+    detail: [
+      ...blocks,
+      "完成後請重開整合終端機，再按「重新檢查」。不會嘗試提權；若權限／MDM 阻擋請找 IT。",
+    ].join("\n\n"),
+  };
 }
 
 function label(tool: EnvironmentInstallPlan["tool"]): string {

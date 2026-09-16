@@ -4,53 +4,51 @@ import { resolveEnvironmentInstallPlan } from "../environmentInstallPlan";
 import { buildEnvironmentInstallConfirm } from "../environmentInstallConfirm";
 
 describe("buildEnvironmentInstallConfirm", () => {
-  it("labels missing tools as 安裝 and ready/reopen tools as 重新安裝／修復", () => {
-    const plan = resolveEnvironmentInstallPlan("uv", "win32");
-    const install = buildEnvironmentInstallConfirm(plan, "missing");
-    assert.match(install.title, /安裝/);
-    assert.doesNotMatch(install.title, /修復/);
-
-    const repair = buildEnvironmentInstallConfirm(plan, "ready");
-    assert.match(repair.title, /重新安裝|修復/);
-
-    const reopen = buildEnvironmentInstallConfirm(plan, "needs-reopen-terminal");
-    assert.match(reopen.title, /重新安裝|修復/);
-  });
-
-  it("includes risk summary and command or download URL in detail", () => {
-    const plan = resolveEnvironmentInstallPlan("uv", "win32");
-    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
-    assert.match(confirm.detail, /遠端|腳本|ByPass/i);
+  it("uses a fixed batch title and lists each selected plan", () => {
+    const items = [
+      {
+        plan: resolveEnvironmentInstallPlan("uv", "win32"),
+        mode: "missing" as const,
+      },
+      {
+        plan: resolveEnvironmentInstallPlan("git", "win32", { wingetAvailable: true }),
+        mode: "ready" as const,
+      },
+    ];
+    const confirm = buildEnvironmentInstallConfirm(items);
+    assert.equal(confirm.title, "安裝所選環境工具");
+    assert.match(confirm.detail, /將執行：/);
     assert.match(confirm.detail, /astral\.sh\/uv\/install\.ps1/);
     assert.match(confirm.detail, /先檢視|preview|more/i);
+    assert.match(confirm.detail, /winget install --id Git\.Git/);
+    assert.match(confirm.detail, /重新安裝／修復/);
   });
 
-  it("mentions system installer risk for open-url plans", () => {
-    const plan = resolveEnvironmentInstallPlan("node", "win32", {
-      wingetAvailable: false,
-    });
-    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
-    assert.match(confirm.detail, /安裝器|下載|nodejs\.org/i);
-    assert.match(confirm.detail, /\.msi|LTS|管理員|UAC/i);
-  });
-
-  it("reveals nvm remote script for macOS Node, not a download page", () => {
-    const plan = resolveEnvironmentInstallPlan("node", "darwin");
-    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
-    assert.match(confirm.detail, /nvm/i);
-    assert.match(confirm.detail, /install\.sh/);
+  it("separates shell commands from open-url plans in one confirm", () => {
+    const confirm = buildEnvironmentInstallConfirm([
+      {
+        plan: resolveEnvironmentInstallPlan("uv", "win32"),
+        mode: "missing",
+      },
+      {
+        plan: resolveEnvironmentInstallPlan("node", "win32", {
+          wingetAvailable: false,
+        }),
+        mode: "missing",
+      },
+      {
+        plan: resolveEnvironmentInstallPlan("pwsh", "darwin"),
+        mode: "missing",
+      },
+    ]);
+    assert.equal(confirm.title, "安裝所選環境工具");
     assert.match(confirm.detail, /將執行：/);
-    assert.doesNotMatch(confirm.detail, /nodejs\.org|\.pkg/);
-  });
-
-  it("titles PowerShell 7 install and lists the Learn URL on macOS", () => {
-    const plan = resolveEnvironmentInstallPlan("pwsh", "darwin");
-    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
-    assert.match(confirm.title, /安裝 PowerShell 7/);
     assert.match(confirm.detail, /將開啟：/);
+    assert.match(confirm.detail, /nodejs\.org/i);
     assert.match(
       confirm.detail,
       /learn\.microsoft\.com\/powershell\/scripting\/install\/install-powershell-on-macos/,
     );
+    assert.match(confirm.detail, /nvm|ByPass|遠端|腳本/i);
   });
 });

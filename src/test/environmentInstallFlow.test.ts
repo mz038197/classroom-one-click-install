@@ -3,10 +3,23 @@ import { describe, it } from "node:test";
 import {
   EnvironmentLaneService,
   type EnvironmentInstallDeps,
+  type EnvironmentInstallResult,
   type ProbeRunner,
 } from "../environmentLane";
 import type { EnvironmentInstallPlan } from "../environmentInstallPlan";
+import type { EnvironmentToolId } from "../toolProbe";
 import type { ToolProbeInput } from "../toolProbe";
+
+function selectOnly(
+  lane: EnvironmentLaneService,
+  id: EnvironmentToolId,
+): void {
+  for (const tool of lane.getView().tools) {
+    if (tool.selected !== (tool.id === id)) {
+      lane.toggleTool(tool.id);
+    }
+  }
+}
 
 function alwaysMissingProbe(): ProbeRunner {
   return async (): Promise<ToolProbeInput> => ({ exitCode: 1, stdout: "" });
@@ -34,7 +47,7 @@ describe("EnvironmentLaneService install flow", () => {
       },
     }));
     await lane.recheck();
-    const result = await lane.installTool("uv");
+    const result = await lane.installSelected();
     assert.equal(result, "cancelled");
     assert.equal(executed, false);
     assert.equal(lane.getView().tools.find((t) => t.id === "uv")?.status, "missing");
@@ -43,7 +56,7 @@ describe("EnvironmentLaneService install flow", () => {
   it("marks needs-reopen-terminal after install completes, not ready", async () => {
     const lane = new EnvironmentLaneService(alwaysMissingProbe(), makeDeps());
     await lane.recheck();
-    const result = await lane.installTool("uv");
+    const result = await lane.installSelected();
     assert.equal(result, "ran");
     const uv = lane.getView().tools.find((t) => t.id === "uv");
     assert.equal(uv?.status, "needs-reopen-terminal");
@@ -66,7 +79,8 @@ describe("EnvironmentLaneService install flow", () => {
     };
     const lane = new EnvironmentLaneService(probe, makeDeps());
     await lane.recheck();
-    await lane.installTool("uv");
+    selectOnly(lane, "uv");
+    await lane.installSelected();
     assert.equal(
       lane.getView().tools.find((t) => t.id === "uv")?.status,
       "needs-reopen-terminal",
@@ -90,7 +104,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    const result = await lane.installTool("git");
+    selectOnly(lane, "git");
+    const result = await lane.installSelected();
     assert.equal(result, "failed");
     const git = lane.getView().tools.find((t) => t.id === "git");
     assert.equal(git?.status, "failed");
@@ -116,7 +131,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    await lane.installTool("git");
+    selectOnly(lane, "git");
+    await lane.installSelected();
     assert.equal(seenPlan?.kind, "shell");
     assert.match(seenPlan?.commandOrUrl ?? "", /winget install --id Git\.Git/);
   });
@@ -134,7 +150,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    await lane.installTool("node");
+    selectOnly(lane, "node");
+    await lane.installSelected();
     assert.equal(seenPlan?.kind, "shell");
     assert.match(seenPlan?.commandOrUrl ?? "", /nvm install --lts/);
     assert.doesNotMatch(seenPlan?.commandOrUrl ?? "", /nodejs\.org/);
@@ -153,7 +170,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    await lane.installTool("git");
+    selectOnly(lane, "git");
+    await lane.installSelected();
     assert.equal(seenPlan?.kind, "open-url");
     assert.match(seenPlan?.commandOrUrl ?? "", /git-scm\.com/);
   });
@@ -161,7 +179,8 @@ describe("EnvironmentLaneService install flow", () => {
   it("marks PowerShell 7 needs-reopen-terminal after a successful install, not ready", async () => {
     const lane = new EnvironmentLaneService(alwaysMissingProbe(), makeDeps());
     await lane.recheck();
-    const result = await lane.installTool("pwsh");
+    selectOnly(lane, "pwsh");
+    const result = await lane.installSelected();
     assert.equal(result, "ran");
     const pwsh = lane.getView().tools.find((t) => t.id === "pwsh");
     assert.equal(pwsh?.status, "needs-reopen-terminal");
@@ -181,7 +200,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    await lane.installTool("pwsh");
+    selectOnly(lane, "pwsh");
+    await lane.installSelected();
     assert.equal(seenPlan?.kind, "shell");
     assert.match(seenPlan?.commandOrUrl ?? "", /Microsoft\.PowerShell/);
     assert.match(seenPlan?.commandOrUrl ?? "", /--disable-interactivity/);
@@ -200,7 +220,8 @@ describe("EnvironmentLaneService install flow", () => {
       }),
     );
     await lane.recheck();
-    await lane.installTool("pwsh");
+    selectOnly(lane, "pwsh");
+    await lane.installSelected();
     assert.equal(seenPlan?.kind, "open-url");
     assert.match(seenPlan?.commandOrUrl ?? "", /install-powershell-on-macos/);
   });
@@ -232,12 +253,164 @@ describe("EnvironmentLaneService install flow", () => {
     await lane.recheck();
     assert.equal(lane.getView().tools.find((t) => t.id === "uv")?.status, "ready");
 
-    await lane.installTool("uv");
+    selectOnly(lane, "uv");
+    await lane.installSelected();
     assert.ok(seenPlan);
     assert.equal(seenPlan?.tool, "uv");
     assert.equal(
       lane.getView().tools.find((t) => t.id === "uv")?.status,
       "needs-reopen-terminal",
+    );
+  });
+
+  it("does not confirm or execute when nothing is selected", async () => {
+    let confirmed = false;
+    let executed = false;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        confirm: async () => {
+          confirmed = true;
+          return true;
+        },
+        execute: async () => {
+          executed = true;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    for (const tool of lane.getView().tools) {
+      if (tool.selected) {
+        lane.toggleTool(tool.id);
+      }
+    }
+    assert.equal(lane.getView().canInstallSelected, false);
+    const result = await lane.installSelected();
+    assert.equal(result, "empty");
+    assert.equal(confirmed, false);
+    assert.equal(executed, false);
+  });
+
+  it("asks once then runs selected tools in fixed order and stops on failure", async () => {
+    const executed: string[] = [];
+    let confirmCount = 0;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        confirm: async (title) => {
+          confirmCount += 1;
+          assert.equal(title, "安裝所選環境工具");
+          return true;
+        },
+        execute: async (plan) => {
+          executed.push(plan.tool);
+          if (plan.tool === "git") {
+            return { ok: false, detail: "Access denied by MDM" };
+          }
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    const result = await lane.installSelected();
+    assert.equal(result, "failed");
+    assert.equal(confirmCount, 1);
+    assert.deepEqual(executed, ["uv", "git"]);
+    const view = lane.getView();
+    assert.equal(view.tools.find((t) => t.id === "uv")?.status, "needs-reopen-terminal");
+    assert.equal(view.tools.find((t) => t.id === "uv")?.selected, false);
+    assert.equal(view.tools.find((t) => t.id === "git")?.status, "failed");
+    assert.equal(
+      lane.getLastFailureDetail()?.includes("Access denied by MDM"),
+      true,
+    );
+    assert.equal(view.tools.find((t) => t.id === "git")?.selected, true);
+    assert.equal(view.tools.find((t) => t.id === "node")?.status, "missing");
+    assert.equal(view.tools.find((t) => t.id === "node")?.selected, true);
+    assert.equal(view.tools.find((t) => t.id === "pwsh")?.status, "missing");
+    assert.notEqual(view.tools.find((t) => t.id === "uv")?.status, "ready");
+  });
+
+  it("shows installing only on the tool currently executing", async () => {
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        execute: async (plan) => {
+          const installing = lane
+            .getView()
+            .tools.filter((t) => t.status === "installing");
+          assert.equal(installing.length, 1);
+          assert.equal(installing[0]?.id, plan.tool);
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installSelected();
+    assert.ok(lane.getView().tools.every((t) => t.status !== "installing"));
+    assert.equal(lane.getView().selectionLocked, false);
+  });
+
+  it("ignores toggle and a second install while a batch is running", async () => {
+    let nested: "cancelled" | "ran" | "failed" | "unavailable" | "empty" | "busy" | undefined;
+    let gitSelectedDuring = true;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        execute: async (plan) => {
+          if (plan.tool === "uv") {
+            nested = await lane.installSelected();
+            lane.toggleTool("git");
+            gitSelectedDuring = lane.getView().tools.find((t) => t.id === "git")?.selected ?? false;
+          }
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installSelected();
+    assert.equal(nested, "busy");
+    assert.equal(gitSelectedDuring, true);
+    assert.equal(lane.getView().selectionLocked, false);
+  });
+
+  it("locks selection before confirm so a second install is ignored", async () => {
+    let nested: EnvironmentInstallResult | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        confirm: async () => {
+          nested = await lane.installSelected();
+          lane.toggleTool("uv");
+          return false;
+        },
+      }),
+    );
+    await lane.recheck();
+    const before = lane.getView().tools.map((t) => t.selected);
+    const result = await lane.installSelected();
+    assert.equal(nested, "busy");
+    assert.equal(result, "cancelled");
+    assert.deepEqual(
+      lane.getView().tools.map((t) => t.selected),
+      before,
+    );
+    assert.equal(lane.getView().selectionLocked, false);
+  });
+
+  it("keeps checkboxes unchanged when the student cancels confirm", async () => {
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({ confirm: async () => false }),
+    );
+    await lane.recheck();
+    lane.toggleTool("pwsh");
+    const before = lane.getView().tools.map((t) => t.selected);
+    await lane.installSelected();
+    assert.deepEqual(
+      lane.getView().tools.map((t) => t.selected),
+      before,
     );
   });
 });

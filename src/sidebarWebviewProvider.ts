@@ -12,7 +12,8 @@ const VIEW_TYPE = "vansClassroomInstall.sidebar";
 type WebviewInbound =
   | { type: "ready" }
   | { type: "recheck" }
-  | { type: "installEnv"; toolId: EnvironmentToolId }
+  | { type: "installSelectedEnv" }
+  | { type: "toggleEnv"; toolId: EnvironmentToolId }
   | { type: "runAction"; actionId: string }
   | { type: "setInviteCode"; inviteCode: string }
   | { type: "setNickname"; nickname: string }
@@ -37,7 +38,8 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
     private readonly routerLane: RouterLaneService,
     private readonly handlers: {
       recheck: () => Promise<void>;
-      installEnv: (toolId: EnvironmentToolId) => Promise<void>;
+      installSelectedEnv: () => Promise<void>;
+      toggleEnv: (toolId: EnvironmentToolId) => Promise<void>;
       runAction: (actionId: string) => Promise<void>;
       routerSignIn: () => Promise<void>;
       routerConnect: () => Promise<void>;
@@ -101,9 +103,12 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
       case "recheck":
         await this.handlers.recheck();
         return;
-      case "installEnv":
+      case "installSelectedEnv":
+        await this.handlers.installSelectedEnv();
+        return;
+      case "toggleEnv":
         if (isToolId(msg.toolId)) {
-          await this.handlers.installEnv(msg.toolId);
+          await this.handlers.toggleEnv(msg.toolId);
         }
         return;
       case "runAction":

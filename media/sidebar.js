@@ -397,7 +397,21 @@
       text: "重新檢查",
       onclick: () => vscode.postMessage({ type: "recheck" }),
     });
-    const envHead = laneHeader("environment", "環境工具", recheck);
+    recheck.disabled = !!vm.environment.selectionLocked;
+    const installSelected = el("button", {
+      className: "primary",
+      type: "button",
+      text: vm.environment.installLabel || "安裝",
+      onclick: () => vscode.postMessage({ type: "installSelectedEnv" }),
+    });
+    installSelected.disabled = !vm.environment.canInstallSelected;
+    const envHeadActions = el(
+      "div",
+      { className: "lane-head-actions" },
+      installSelected,
+      recheck,
+    );
+    const envHead = laneHeader("environment", "環境工具", envHeadActions);
     const envBody = el("div", { className: "lane-body" });
     envBody.appendChild(
       el("div", {
@@ -410,11 +424,24 @@
     }
     for (const tool of vm.environment.tools) {
       const card = el("div", { className: "card" });
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = !!tool.selected;
+      check.disabled = !!tool.checkboxDisabled;
+      check.setAttribute("aria-label", "選取 " + tool.label);
+      check.addEventListener("change", () => {
+        vscode.postMessage({ type: "toggleEnv", toolId: tool.id });
+      });
       card.appendChild(
         el(
           "div",
           { className: "card-top" },
-          el("p", { className: "card-title", text: tool.label }),
+          el(
+            "div",
+            { className: "tool-check" },
+            check,
+            el("p", { className: "card-title", text: tool.label }),
+          ),
           el("span", {
             className: statusClass(tool.status),
             text: statusTextEnv(tool),
@@ -422,17 +449,6 @@
         ),
       );
       card.appendChild(el("p", { className: "card-detail", text: tool.detail }));
-      const actions = el("div", { className: "row-actions" });
-      const btn = el("button", {
-        className: "primary",
-        type: "button",
-        text: tool.actionLabel,
-        onclick: () =>
-          vscode.postMessage({ type: "installEnv", toolId: tool.id }),
-      });
-      btn.disabled = !tool.canRun;
-      actions.appendChild(btn);
-      card.appendChild(actions);
       envBody.appendChild(card);
     }
     app.appendChild(

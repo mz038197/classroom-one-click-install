@@ -15,6 +15,14 @@ export type ProbeRunner = (tool: EnvironmentToolId) => Promise<ToolProbeInput>;
 
 export type InstallExecuteResult = { ok: true } | { ok: false; detail: string };
 
+export type EnvironmentInstallResult =
+  | "cancelled"
+  | "ran"
+  | "failed"
+  | "unavailable"
+  | "empty"
+  | "busy";
+
 export type EnvironmentInstallDeps = {
   platform: InstallPlatform;
   confirm: (title: string, detail: string) => Promise<boolean>;
@@ -35,14 +43,15 @@ export type EnvironmentToolView = {
   label: string;
   status: EnvironmentToolUiStatus;
   detail: string;
-  /** 側邊欄動作：安裝或重新安裝／修復 */
-  actionLabel: "安裝" | "重新安裝／修復";
+  selected: boolean;
 };
 
 export type EnvironmentLaneView = {
   tools: EnvironmentToolView[];
   toolchainReady: boolean;
   tip?: string;
+  canInstallSelected: boolean;
+  selectionLocked: boolean;
 };
 
 type Overlay =
@@ -66,71 +75,87 @@ const IT_HINT = "請找 IT／管理員協助；本擴充功能不會嘗試提權
 
 type ToolStatusMap = Record<EnvironmentToolId, ToolProbeStatus>;
 
+function defaultSelectedForStatus(
+  status: EnvironmentToolUiStatus,
+): boolean {
+  return status === "missing" || status === "failed";
+}
+
 export function buildEnvironmentLaneView(
   statuses: ToolStatusMap,
   overlays: Partial<Record<EnvironmentToolId, Overlay>> = {},
+  selected: Partial<Record<EnvironmentToolId, boolean>> = {},
+  selectionLocked = false,
 ): EnvironmentLaneView {
   const tools: EnvironmentToolView[] = TOOL_ORDER.map((id) => {
     const overlay = overlays[id];
     const probed = statuses[id];
-    if (overlay?.kind === "installing") {
-      return {
-        id,
-        label: TOOL_LABEL[id],
-        status: "installing",
-        detail: "安裝中…",
-        actionLabel: actionLabelFor(probed),
-      };
-    }
-    if (overlay?.kind === "needs-reopen-terminal") {
-      return {
-        id,
-        label: TOOL_LABEL[id],
-        status: "needs-reopen-terminal",
-        detail: REOPEN_DETAIL,
-        actionLabel: "重新安裝／修復",
-      };
-    }
-    if (overlay?.kind === "failed") {
-      return {
-        id,
-        label: TOOL_LABEL[id],
-        status: "failed",
-        detail: overlay.detail,
-        actionLabel: actionLabelFor(probed),
-      };
-    }
-    if (probed.status === "ready") {
-      return {
-        id,
-        label: TOOL_LABEL[id],
-        status: "ready",
-        detail: probed.version,
-        actionLabel: "重新安裝／修復",
-      };
-    }
-    return {
-      id,
-      label: TOOL_LABEL[id],
-      status: "missing",
-      detail: "未安裝",
-      actionLabel: "安裝",
-    };
+    const row = toolRow(id, probed, overlay);
+    const isSelected =
+      selected[id] !== undefined
+        ? Boolean(selected[id])
+        : defaultSelectedForStatus(row.status);
+    return { ...row, selected: isSelected };
   });
 
   const toolchainReady = tools.every((t) => t.status === "ready");
   const needsTip =
     !toolchainReady ||
     tools.some((t) => t.status === "needs-reopen-terminal" || t.status === "missing");
+  const canInstallSelected =
+    !selectionLocked && tools.some((t) => t.selected);
   return {
     tools,
     toolchainReady,
     tip: needsTip && !toolchainReady ? MISSING_TIP : undefined,
+    canInstallSelected,
+    selectionLocked,
   };
 }
 
-function actionLabelFor(probed: ToolProbeStatus): "安裝" | "重新安裝／修復" {
-  return probed.status === "ready" ? "重新安裝／修復" : "安裝";
+function toolRow(
+  id: EnvironmentToolId,
+  probed: ToolProbeStatus,
+  overlay: Overlay | undefined,
+): Omit<EnvironmentToolView, "selected"> {
+  if (overlay?.kind === "installing") {
+    return {
+      id,
+      label: TOOL_LABEL[id],
+      status: "installing",
+      detail: "安裝中…",
+    };
+  }
+  if (overlay?.kind === "needs-reopen-terminal") {
+    return {
+      id,
+      label: TOOL_LABEL[id],
+      status: "needs-reopen-terminal",
+      detail: REOPEN_DETAIL,
+    };
+  }
+  if (overlay?.kind === "failed") {
+    return {
+      id,
+      label: TOOL_LABEL[id],
+      status: "failed",
+      detail: overlay.detail,
+    };
+  }
+  if (probed.status === "ready") {
+    return {
+      id,
+      label: TOOL_LABEL[id],
+      status: "ready",
+      detail: probed.version,
+    };
+  }
+  return {
+    id,
+    label: TOOL_LABEL[id],
+    status: "missing",
+    detail: "未安裝",
+  };
 }
 
 const UNKNOWN: ToolStatusMap = {
@@ -140,21 +165,63 @@ const UNKNOWN: ToolStatusMap = {
   pwsh: { status: "missing" },
 };
 
-/** Environment Lane：偵測／重新檢查／安裝與請重開終端。 */
+/** Environment Lane：偵測／重新檢查／勾選後一次安裝與請重開終端。 */
 export class EnvironmentLaneService {
   private statuses: ToolStatusMap = { ...UNKNOWN };
   private overlays: Partial<Record<EnvironmentToolId, Overlay>> = {};
+  private selected: Record<EnvironmentToolId, boolean> = {
+    uv: true,
+    git: true,
+    node: true,
+    pwsh: true,
+  };
+  private selectionLocked = false;
+  private readonly changeListeners = new Set<() => void>();
+
+  private lastFailureDetail: string | undefined;
 
   constructor(
     private readonly probe: ProbeRunner,
     private readonly installDeps?: EnvironmentInstallDeps,
   ) {}
 
+  onDidChange(listener: () => void): { dispose(): void } {
+    this.changeListeners.add(listener);
+    return {
+      dispose: () => {
+        this.changeListeners.delete(listener);
+      },
+    };
+  }
+
+  getLastFailureDetail(): string | undefined {
+    return this.lastFailureDetail;
+  }
+
   getView(): EnvironmentLaneView {
-    return buildEnvironmentLaneView(this.statuses, this.overlays);
+    return buildEnvironmentLaneView(
+      this.statuses,
+      this.overlays,
+      this.selected,
+      this.selectionLocked,
+    );
+  }
+
+  toggleTool(tool: EnvironmentToolId): void {
+    if (this.selectionLocked) {
+      return;
+    }
+    this.selected[tool] = !this.selected[tool];
+    this.notify();
   }
 
   async recheck(): Promise<void> {
+    if (this.selectionLocked) {
+      return;
+    }
+    const previousStatus = new Map(
+      this.getView().tools.map((tool) => [tool.id, tool.status]),
+    );
     const next = { ...UNKNOWN };
     for (const tool of TOOL_ORDER) {
       const raw = await this.probe(tool);
@@ -177,16 +244,25 @@ export class EnvironmentLaneService {
       }
     }
     this.overlays = nextOverlays;
+    const after = buildEnvironmentLaneView(this.statuses, this.overlays);
+    for (const tool of after.tools) {
+      if (previousStatus.get(tool.id) !== tool.status) {
+        this.selected[tool.id] = defaultSelectedForStatus(tool.status);
+      }
+    }
+    this.notify();
   }
 
-  async installTool(
-    tool: EnvironmentToolId,
-  ): Promise<"cancelled" | "ran" | "failed" | "unavailable"> {
+  async installSelected(): Promise<EnvironmentInstallResult> {
     if (!this.installDeps) {
       return "unavailable";
     }
-    if (this.overlays[tool]?.kind === "installing") {
-      return "cancelled";
+    if (this.selectionLocked) {
+      return "busy";
+    }
+    const queued = TOOL_ORDER.filter((id) => this.selected[id]);
+    if (queued.length === 0) {
+      return "empty";
     }
 
     const wingetAvailable =
@@ -194,36 +270,62 @@ export class EnvironmentLaneService {
       this.installDeps.wingetAvailable
         ? await this.installDeps.wingetAvailable()
         : false;
-    const plan = resolveEnvironmentInstallPlan(tool, this.installDeps.platform, {
-      wingetAvailable,
-    });
-    const probed = this.statuses[tool];
-    const mode =
-      this.overlays[tool]?.kind === "needs-reopen-terminal"
-        ? "needs-reopen-terminal"
-        : this.overlays[tool]?.kind === "failed"
-          ? "failed"
-          : probed.status === "ready"
-            ? "ready"
-            : "missing";
-    const confirm = buildEnvironmentInstallConfirm(plan, mode);
+
+    const items = queued.map((tool) => ({
+      plan: resolveEnvironmentInstallPlan(tool, this.installDeps!.platform, {
+        wingetAvailable,
+      }),
+      mode: this.confirmMode(tool),
+    }));
+    const confirm = buildEnvironmentInstallConfirm(items);
+    this.selectionLocked = true;
+    this.notify();
     const ok = await this.installDeps.confirm(confirm.title, confirm.detail);
     if (!ok) {
+      this.selectionLocked = false;
+      this.notify();
       return "cancelled";
     }
 
-    this.overlays[tool] = { kind: "installing" };
-    const result = await this.installDeps.execute(plan);
-    if (!result.ok) {
-      this.overlays[tool] = {
-        kind: "failed",
-        detail: `${result.detail} · ${IT_HINT}`,
-      };
-      return "failed";
+    let failed = false;
+    for (const item of items) {
+      const tool = item.plan.tool;
+      this.overlays[tool] = { kind: "installing" };
+      this.notify();
+      const result = await this.installDeps.execute(item.plan);
+      if (!result.ok) {
+        const detail = `${result.detail} · ${IT_HINT}`;
+        this.overlays[tool] = { kind: "failed", detail };
+        this.selected[tool] = true;
+        this.lastFailureDetail = detail;
+        failed = true;
+        break;
+      }
+      this.overlays[tool] = { kind: "needs-reopen-terminal" };
+      this.selected[tool] = false;
     }
 
-    // 規格：安裝結束不得直接標就緒。
-    this.overlays[tool] = { kind: "needs-reopen-terminal" };
-    return "ran";
+    this.selectionLocked = false;
+    this.notify();
+    return failed ? "failed" : "ran";
+  }
+
+  private confirmMode(
+    tool: EnvironmentToolId,
+  ): "missing" | "ready" | "needs-reopen-terminal" | "failed" {
+    const overlay = this.overlays[tool];
+    if (overlay?.kind === "needs-reopen-terminal") {
+      return "needs-reopen-terminal";
+    }
+    if (overlay?.kind === "failed") {
+      return "failed";
+    }
+    return this.statuses[tool].status === "ready" ? "ready" : "missing";
+  }
+
+  private notify(): void {
+    for (const listener of this.changeListeners) {
+      listener();
+    }
   }
 }

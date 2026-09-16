@@ -239,7 +239,21 @@ export function getSidebarWebviewHtml(
       border-color: color-mix(in srgb, var(--vans-accent) 40%, transparent);
     }
     .status.idle { opacity: 0.75; }
-    .row-actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .lane-head-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .tool-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+    }
+    .tool-check input {
+      margin: 3px 0 0;
+      flex-shrink: 0;
+    }
     button {
       font: inherit;
       cursor: pointer;

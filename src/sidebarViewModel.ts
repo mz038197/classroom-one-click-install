@@ -18,9 +18,9 @@ export type SidebarEnvToolVm = {
   label: string;
   status: EnvironmentToolUiStatus;
   detail: string;
-  actionLabel: "安裝" | "重新安裝／修復";
+  selected: boolean;
+  checkboxDisabled: boolean;
   busy: boolean;
-  canRun: boolean;
 };
 
 export type SidebarCourseActionVm = {
@@ -70,6 +70,9 @@ export type SidebarViewModel = {
     toolchainReady: boolean;
     badge: string;
     tip?: string;
+    canInstallSelected: boolean;
+    selectionLocked: boolean;
+    installLabel: string;
     tools: SidebarEnvToolVm[];
   };
   course: {
@@ -144,18 +147,18 @@ export function buildSidebarViewModel(
       toolchainReady: env.toolchainReady,
       badge,
       ...(env.tip ? { tip: env.tip } : {}),
-      tools: env.tools.map((tool) => {
-        const busy = tool.status === "installing";
-        return {
-          id: tool.id,
-          label: tool.label,
-          status: tool.status,
-          detail: tool.detail,
-          actionLabel: tool.actionLabel,
-          busy,
-          canRun: !busy,
-        };
-      }),
+      canInstallSelected: env.canInstallSelected,
+      selectionLocked: env.selectionLocked,
+      installLabel: "安裝",
+      tools: env.tools.map((tool) => ({
+        id: tool.id,
+        label: tool.label,
+        status: tool.status,
+        detail: tool.detail,
+        selected: tool.selected,
+        checkboxDisabled: env.selectionLocked,
+        busy: tool.status === "installing",
+      })),
     },
     course: buildCourseSection(input.course),
     snippets: buildSnippetSection(input.course),

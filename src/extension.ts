@@ -18,7 +18,6 @@ import {
   scheduleRelaunchAfterQuit,
 } from "./relaunchHost";
 import { createDefaultProbeRunner } from "./probeRunner";
-import type { EnvironmentToolId } from "./toolProbe";
 import {
   createRouterPortalClient,
   defaultRouterBaseUrl,
@@ -28,7 +27,6 @@ import {
   type RouterLaneActionResult,
 } from "./routerLaneService";
 import {
-  INSTALL_ENVIRONMENT_TOOL_COMMAND,
   RECHECK_ENVIRONMENT_COMMAND,
   RUN_INSTALL_ACTION_COMMAND,
 } from "./sidebarCommands";
@@ -161,7 +159,11 @@ export function activate(context: vscode.ExtensionContext): void {
     routerLane,
     {
       recheck: () => recheckEnvironment(),
-      installEnv: (toolId) => installEnvironmentTool(toolId),
+      installSelectedEnv: () => installSelectedEnvironmentTools(),
+      toggleEnv: async (toolId) => {
+        environmentLane.toggleTool(toolId);
+        refreshUi();
+      },
       runAction: async (actionId) => {
         await courseLane.runAction(actionId);
       },
@@ -271,8 +273,8 @@ export function activate(context: vscode.ExtensionContext): void {
     refreshUi();
   };
 
-  const installEnvironmentTool = async (toolId: EnvironmentToolId): Promise<void> => {
-    const result = await environmentLane.installTool(toolId);
+  const installSelectedEnvironmentTools = async (): Promise<void> => {
+    const result = await environmentLane.installSelected();
     refreshUi();
     if (result === "ran") {
       void vscode.window.showInformationMessage(
@@ -280,8 +282,7 @@ export function activate(context: vscode.ExtensionContext): void {
       );
     } else if (result === "failed") {
       const detail =
-        environmentLane.getView().tools.find((t) => t.id === toolId)?.detail ??
-        "安裝失敗";
+        environmentLane.getLastFailureDetail() ?? "安裝失敗";
       void vscode.window.showErrorMessage(detail);
     }
   };
@@ -313,6 +314,7 @@ export function activate(context: vscode.ExtensionContext): void {
       provider,
       { webviewOptions: { retainContextWhenHidden: true } },
     ),
+    environmentLane.onDidChange(refreshUi),
     vscode.window.registerUriHandler({
       handleUri(uri: vscode.Uri): void {
         void (async () => {
@@ -333,12 +335,6 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(RECHECK_ENVIRONMENT_COMMAND, () => {
       void recheckEnvironment();
     }),
-    vscode.commands.registerCommand(
-      INSTALL_ENVIRONMENT_TOOL_COMMAND,
-      (toolId: EnvironmentToolId) => {
-        void installEnvironmentTool(toolId);
-      },
-    ),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       watchCatalog();
       reloadCatalog();
