@@ -158,7 +158,7 @@ export function createDefaultProbeRunner(): ProbeRunner {
   let windowsPathCache: string | undefined | null = null;
 
   return async (tool: EnvironmentToolId) => {
-    // recheck 固定 uv→git→node；uv 時新開終端以取得新 PATH／profile。
+    // recheck 固定 uv→git→node→pwsh；uv 時新開終端以取得新 PATH／profile。
     if (tool === "uv") {
       session?.dispose();
       session = await openProbeSession();

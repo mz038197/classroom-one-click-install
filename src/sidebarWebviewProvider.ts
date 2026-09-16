@@ -178,5 +178,5 @@ export class SidebarWebviewProvider implements vscode.WebviewViewProvider {
 }
 
 function isToolId(value: unknown): value is EnvironmentToolId {
-  return value === "uv" || value === "git" || value === "node";
+  return value === "uv" || value === "git" || value === "node" || value === "pwsh";
 }

@@ -22,7 +22,7 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.equal(win.kind, "shell");
     assert.equal(
       win.commandOrUrl,
-      "winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements",
+      "winget install --id Git.Git -e --source winget --disable-interactivity -h --accept-package-agreements --accept-source-agreements",
     );
     assert.match(win.summary, /winget/i);
   });
@@ -48,7 +48,7 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.equal(win.kind, "shell");
     assert.equal(
       win.commandOrUrl,
-      "winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements",
+      "winget install --id OpenJS.NodeJS.LTS -e --source winget --disable-interactivity -h --accept-package-agreements --accept-source-agreements",
     );
     assert.match(win.summary, /winget/i);
   });
@@ -72,5 +72,41 @@ describe("resolveEnvironmentInstallPlan", () => {
     assert.match(mac.summary, /nvm|LTS|遠端|腳本/i);
     assert.doesNotMatch(mac.commandOrUrl, /nodejs\.org/);
     assert.match(mac.previewCommand ?? "", /install\.sh/);
+  });
+
+  it("uses the same quiet winget flags for PowerShell 7 on Windows", () => {
+    const win = resolveEnvironmentInstallPlan("pwsh", "win32", {
+      wingetAvailable: true,
+    });
+    assert.equal(win.kind, "shell");
+    assert.equal(
+      win.commandOrUrl,
+      "winget install --id Microsoft.PowerShell -e --source winget --disable-interactivity -h --accept-package-agreements --accept-source-agreements",
+    );
+    assert.match(win.summary, /winget/i);
+  });
+
+  it("opens the Windows PowerShell install page without winget", () => {
+    const win = resolveEnvironmentInstallPlan("pwsh", "win32", {
+      wingetAvailable: false,
+    });
+    assert.equal(win.kind, "open-url");
+    assert.match(
+      win.commandOrUrl,
+      /learn\.microsoft\.com\/powershell\/scripting\/install\/installing-powershell-on-windows/,
+    );
+    assert.doesNotMatch(win.commandOrUrl, /astral\.sh/);
+  });
+
+  it("opens Microsoft Learn macOS PowerShell page, not brew or sudo tar", () => {
+    const mac = resolveEnvironmentInstallPlan("pwsh", "darwin");
+    assert.equal(mac.kind, "open-url");
+    assert.equal(
+      mac.commandOrUrl,
+      "https://learn.microsoft.com/powershell/scripting/install/install-powershell-on-macos",
+    );
+    assert.doesNotMatch(mac.commandOrUrl, /brew|sudo tar/i);
+    assert.doesNotMatch(mac.summary, /Homebrew|brew|sudo tar/i);
+    assert.match(mac.summary, /arm64|x64|\.pkg|管理員|開頁/i);
   });
 });

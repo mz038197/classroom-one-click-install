@@ -158,6 +158,53 @@ describe("EnvironmentLaneService install flow", () => {
     assert.match(seenPlan?.commandOrUrl ?? "", /git-scm\.com/);
   });
 
+  it("marks PowerShell 7 needs-reopen-terminal after a successful install, not ready", async () => {
+    const lane = new EnvironmentLaneService(alwaysMissingProbe(), makeDeps());
+    await lane.recheck();
+    const result = await lane.installTool("pwsh");
+    assert.equal(result, "ran");
+    const pwsh = lane.getView().tools.find((t) => t.id === "pwsh");
+    assert.equal(pwsh?.status, "needs-reopen-terminal");
+    assert.match(pwsh?.detail ?? "", /重開終端/);
+  });
+
+  it("uses winget for PowerShell 7 on Windows when available", async () => {
+    let seenPlan: EnvironmentInstallPlan | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        wingetAvailable: async () => true,
+        execute: async (plan) => {
+          seenPlan = plan;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installTool("pwsh");
+    assert.equal(seenPlan?.kind, "shell");
+    assert.match(seenPlan?.commandOrUrl ?? "", /Microsoft\.PowerShell/);
+    assert.match(seenPlan?.commandOrUrl ?? "", /--disable-interactivity/);
+  });
+
+  it("opens Learn macOS PowerShell page from a single-row install", async () => {
+    let seenPlan: EnvironmentInstallPlan | undefined;
+    const lane = new EnvironmentLaneService(
+      alwaysMissingProbe(),
+      makeDeps({
+        platform: "darwin",
+        execute: async (plan) => {
+          seenPlan = plan;
+          return { ok: true };
+        },
+      }),
+    );
+    await lane.recheck();
+    await lane.installTool("pwsh");
+    assert.equal(seenPlan?.kind, "open-url");
+    assert.match(seenPlan?.commandOrUrl ?? "", /install-powershell-on-macos/);
+  });
+
   it("allows repair on a ready tool via the same reopen-terminal flow", async () => {
     const probe: ProbeRunner = async (tool) => {
       if (tool === "uv") {

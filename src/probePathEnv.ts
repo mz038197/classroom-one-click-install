@@ -11,7 +11,7 @@ function shellSingleQuote(value: string): string {
 
 /**
  * VS Code 整合終端也不保證已載入 `.zshrc`（uv 常寫在 `~/.local/bin`）。
- * 探測指令補使用者 bin；nvm 只加在 Node 探測，避免拖垮 uv／git。
+ * 探測指令補使用者 bin；nvm 只加在 Node 探測，避免拖垮 uv／git／pwsh。
  */
 export function wrapUnixProbeCommand(command: string): string {
   return [
@@ -39,7 +39,9 @@ export function environmentProbeCommands(
       ? ["uv --version"]
       : tool === "git"
         ? ["git --version"]
-        : ["node --version", "npm --version"];
+        : tool === "pwsh"
+          ? ["pwsh --version"]
+          : ["node --version", "npm --version"];
   if (platform === "win32") {
     return raw;
   }

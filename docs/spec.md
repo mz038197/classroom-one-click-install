@@ -12,7 +12,7 @@
 
 上課時老師常投影 `uv add …`、`uvx …` 等指令，學生必須複製貼上到編輯器終端機。本產品讓學生在側邊欄：
 
-1. **Environment Lane**：檢查／安裝固定環境工具（uv、git、Node.js）  
+1. **Environment Lane**：檢查／安裝固定環境工具（uv、git、Node.js、PowerShell 7）  
 2. **Course Lane**：一鍵執行本課 Install Action（清單優先來自所連 Router 的 Session Catalog；失敗時 fallback 工作區 `classroom-installs.yaml`）  
 3. **Snippet Lane**：複製本課 Lesson Snippet（起步程式）到剪貼簿，學生自行貼進專案檔  
 
@@ -27,7 +27,7 @@
 
 - VS Code／Cursor 擴充功能側邊欄（**Router Lane「課堂連線」在上**，其下 Environment、Course，有片段時再加 Snippet Lane）  
 - Router Lane（凡思 VS Code）：預設 Invite Code + Classroom Nickname →「連線」→ Nickname Redeem → BYOK Setup。Google → Sign-in Handoff 為次要「使用 Google 登入」，點入後才露出一次性貼碼與「貼上並完成連線」。Pegasi Router Lane 仍為 Invite Code →「連線登入」→ Google → Sign-in Handoff。Cursor 不自動 BYOK，也不做 Nickname Redeem。BYOK 寫入帶 Classroom API Key 的 `GET /extension/chat-language-models`（Session Model Allowlist；未設定＝Template 全集）。見 [ADR 0014](./adr/0014-session-model-allowlist.md)、[ADR 0013](./adr/0013-vans-nickname-redeem.md)、[ADR 0003](./adr/0003-router-sign-in-handoff.md)。  
-- 環境工具：uv、git、Node.js（偵測、安裝、重新檢查、重新安裝／修復）  
+- 環境工具：uv、git、Node.js、PowerShell 7（偵測、安裝、重新檢查、重新安裝／修復）  
 - 本課動作：載入 Session／本機 Course Catalog，執行其中的整段 `command`  
 - 本課片段：同一份 Catalog 的 `snippets`，側欄複製完整 `body`（不執行、不寫檔）  
 - 執行前確認完整命令；公開 `git+https` repo 假設  
@@ -68,11 +68,11 @@
 | Install Action | 老師策展、學生可點的一筆安裝動作（顯示名＋kind＋命令） |
 | Lesson Snippet | 老師策展、學生可複製的起步程式（`id`／`title`／`body`，選填 `paste_hint`） |
 | Action Kind | `skill`／`package`／`mcp`（純顯示 tag）；不是 snippet |
-| Environment Tool | uv／git／Node.js |
+| Environment Tool | uv／git／Node.js／PowerShell 7（`pwsh`） |
 | Course Catalog | Session YAML（Router）／fallback `classroom-installs.yaml`（`actions`＋選填 `snippets`） |
 | Router Lane／Environment Lane／Course Lane／Snippet Lane | 側邊欄各區（Snippet Lane 無片段時不出現） |
 | Invite Code／Classroom Nickname／Nickname Redeem／Classroom API Key／Sign-in Handoff／BYOK Setup／Session Model Allowlist／Router Model Template | 見 [`CONTEXT.md`](../CONTEXT.md) |
-| Toolchain Ready | 三工具皆偵測就緒的**總覽**狀態；只服務 Environment Lane 徽章，不是 Course Lane 總開關，也不用來啟用／禁用單一 Install Action |
+| Toolchain Ready | 四工具皆偵測就緒的**總覽**狀態；只服務 Environment Lane 徽章，不是 Course Lane 總開關，也不用來啟用／禁用單一 Install Action |
 
 ---
 
@@ -171,8 +171,8 @@ snippets:
 
 ### 偵測
 
-- 優先在 **VS Code** 整合終端機執行版本命令；**stdout 有可解析的版本行**才算就緒（`uv 0.x`、`git version …`、Node `v…` 且 npm 亦有版本行）。結束碼不是 0（含 Shell Integration 未回報）仍可就緒。橫幅、命令回音、空輸出不算版本。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)。  
-- macOS 上 uv／git／Node 的探測須含使用者 bin（見 [ADR 0008](./adr/0008-macos-probe-nvm-user-path.md)）；**nvm 只接在 Node**，不假設終端已讀 `.zshrc`。  
+- 優先在 **VS Code** 整合終端機執行版本命令；**stdout 有可解析的版本行**才算就緒（`uv 0.x`、`git version …`、Node `v…` 且 npm 亦有版本行、`pwsh` 的 `PowerShell 7.x`）。結束碼不是 0（含 Shell Integration 未回報）仍可就緒。橫幅、命令回音、空輸出、Windows PowerShell 5.1 不算 PowerShell 7。見 [ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)、[ADR 0015](./adr/0015-powershell7-environment-tool.md)。  
+- macOS 上 uv／git／Node／pwsh 的探測須含使用者 bin（見 [ADR 0008](./adr/0008-macos-probe-nvm-user-path.md)）；**nvm 只接在 Node**，不假設終端已讀 `.zshrc`。  
 - 無 Shell Integration 時靜默改以系統／登入殼 PATH 跑**同一組**命令（見 [ADR 0005](./adr/0005-environment-probe-path.md)）；探測等待 Shell Integration 的時間與安裝相同（4s）；不彈警告 toast。  
 - **與是否由本擴充功能安裝無關**；學生在外部終端機裝好，重開／新開整合終端後按「重新檢查」即可顯示版本。  
 - Node 須同時驗證 `node` 與 `npm` 的版本行。  
@@ -196,8 +196,9 @@ snippets:
 | 工具 | Windows 預設 | macOS 預設 |
 |---|---|---|
 | uv | Astral standalone PowerShell installer | Astral standalone shell installer |
-| Git | Git for Windows 官方 installer（有 winget 則 winget） | Xcode Command Line Tools |
-| Node.js | 有 winget 則 LTS；否則官網 `.msi` | nvm 官方安裝腳本（不釘版本）＋當時 LTS（`nvm install --lts`） |
+| Git | 有 winget 則 `Git.Git`（安靜旗標）；否則官網 installer | Xcode Command Line Tools |
+| Node.js | 有 winget 則 `OpenJS.NodeJS.LTS`（安靜旗標）；否則官網 `.msi` | nvm 官方安裝腳本（不釘版本）＋當時 LTS（`nvm install --lts`） |
+| PowerShell 7 | 有 winget 則 `Microsoft.PowerShell`（安靜旗標）；否則 Learn Windows 安裝頁 | 開啟 Learn〈Install PowerShell on macOS〉（不 brew、不 sudo tar） |
 
 ### 與 Course Lane
 
@@ -287,11 +288,11 @@ snippets:
 
 1. **Catalog 載入**：課堂連線後 Course Lane 顯示 Session Catalog 的 `title`、kind tag（與選填 `description`）；無可用遠端 YAML 時 fallback 工作區 `classroom-installs.yaml` 並提示可再試遠端。  
 2. **確認後執行**：點一本課動作會先顯示完整 `command`；取消不執行；確認後在工作區根目錄於整合終端機執行該命令。  
-3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。整合終端已印出可解析版本行時，即使探測結束碼非 0，仍顯示就緒。  
+3. **外部安裝可偵測**：在編輯器外安裝 uv（或 git／Node／PowerShell 7）後，新開整合終端並按「重新檢查」，該工具顯示版本且非「未安裝」。整合終端已印出可解析版本行時，即使探測結束碼非 0，仍顯示就緒。  
 4. **環境安裝不假成功**：對未安裝工具走「安裝」流程後，狀態為「請重開終端機」類提示，而非直接就緒；重開並重新檢查後才變就緒。macOS git 在 CLT 已安裝、`xcode-select --install` 回 already installed 時，不得標安裝失敗／找 IT，應走「請重開終端機」。  
-5. **缺工具不鎖本課**：uv／git／Node 皆未就緒時，本課 `uv`／`uvx`／含 `git+` 的動作仍可點；確認框不提缺工具；確認後仍送進終端（失敗則一般失敗狀態＋終端原文）。  
+5. **缺工具不鎖本課**：uv／git／Node／PowerShell 7 皆未就緒時，本課 `uv`／`uvx`／含 `git+` 的動作仍可點；確認框不提缺工具；確認後仍送進終端（失敗則一般失敗狀態＋終端原文）。  
 6. **公開 git 失敗提示**：模擬 `git+https` 失敗時，側邊欄有短提示且終端機可見完整輸出；產品不引導 `gh auth`。  
-7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node。  
+7. **無自訂命令**：UI 不提供任意命令輸入框；Environment 安裝項固定為 uv／git／Node／PowerShell 7。  
 8. **側邊欄 IA**：環境區在本課區之上；具備重新檢查與（就緒時）重新安裝／修復入口；兩大區可各自收合，預設展開。  
 9. **本課片段**：Catalog 含合法 `snippets` 時，本課安裝下方出現「本課片段」；點複製把完整 `body` 寫入剪貼簿且不跳確認；無片段時整區不出現。非法 `snippets` 整份 Catalog 失敗。  
 
@@ -314,3 +315,4 @@ snippets:
 | [11](../.scratch/classroom-one-click-install/issues/11-grilling-macos-false-missing-install.md) | 假未安裝與 already-installed（[ADR 0011](./adr/0011-environment-probe-version-and-already-installed.md)） |
 | — | 本課片段第四區（[ADR 0012](./adr/0012-lesson-snippet-copy-lane.md)） |
 | — | 凡思 VS Code Nickname Redeem（[ADR 0013](./adr/0013-vans-nickname-redeem.md)） |
+| — | PowerShell 7 為第四個 Environment Tool（[ADR 0015](./adr/0015-powershell7-environment-tool.md)） |

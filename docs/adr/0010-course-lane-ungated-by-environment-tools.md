@@ -1,6 +1,6 @@
 # Course Lane 不因 Environment Tool 未就緒而禁用
 
-課堂 catalog 幾乎全是 `uv`／`git+`，先前「依依賴禁用」會讓本課安裝看起來整區鎖死，探測未就緒（含請重開終端）時也擋得到老師趕進度。我們決定：Environment Lane 與 Course Lane **可並行**。Install Action 不因 uv／git／Node 未就緒而禁用、不拒絕執行、確認框與卡片也不提缺工具；點了就跑，失敗只顯示一般失敗＋終端原文，不解析成「請去裝環境工具」。Toolchain Ready 只當 Environment Lane 徽章。側邊欄順序維持環境工具在上（引導，不是關卡）。此決策撤回 [04](../../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md) 與 spec 舊 DoD「依依賴禁用」對 Course Lane 的約束。
+課堂 catalog 幾乎全是 `uv`／`git+`，先前「依依賴禁用」會讓本課安裝看起來整區鎖死，探測未就緒（含請重開終端）時也擋得到老師趕進度。我們決定：Environment Lane 與 Course Lane **可並行**。Install Action 不因 uv／git／Node／PowerShell 7 未就緒而禁用、不拒絕執行、確認框與卡片也不提缺工具；點了就跑，失敗只顯示一般失敗＋終端原文，不解析成「請去裝環境工具」。Toolchain Ready 只當 Environment Lane 徽章。側邊欄順序維持環境工具在上（引導，不是關卡）。此決策撤回 [04](../../.scratch/classroom-one-click-install/issues/04-grilling-environment-lane-behavior.md) 與 spec 舊 DoD「依依賴禁用」對 Course Lane 的約束。PowerShell 7 加入四件套後仍適用，見 [ADR 0015](./0015-powershell7-environment-tool.md)。
 
 ## Considered Options
 

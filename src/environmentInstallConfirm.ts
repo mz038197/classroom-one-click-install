@@ -34,5 +34,8 @@ function label(tool: EnvironmentInstallPlan["tool"]): string {
   if (tool === "node") {
     return "Node.js";
   }
+  if (tool === "pwsh") {
+    return "PowerShell 7";
+  }
   return tool;
 }

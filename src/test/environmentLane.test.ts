@@ -13,6 +13,7 @@ describe("buildEnvironmentLaneView", () => {
       uv: { status: "ready", version: "0.7.12" },
       git: { status: "missing" },
       node: { status: "ready", version: "v22.11.0" },
+      pwsh: { status: "missing" },
     });
     assert.deepEqual(
       view.tools.map((t) => ({ id: t.id, label: t.label, detail: t.detail })),
@@ -20,19 +21,30 @@ describe("buildEnvironmentLaneView", () => {
         { id: "uv", label: "uv", detail: "0.7.12" },
         { id: "git", label: "git", detail: "未安裝" },
         { id: "node", label: "Node.js", detail: "v22.11.0" },
+        { id: "pwsh", label: "PowerShell 7", detail: "未安裝" },
       ],
     );
     assert.equal(view.toolchainReady, false);
   });
 
-  it("marks Toolchain Ready only when all three tools are ready", () => {
+  it("marks Toolchain Ready only when all four tools are ready", () => {
     assert.equal(
       buildEnvironmentLaneView({
         uv: { status: "ready", version: "1" },
         git: { status: "ready", version: "2" },
         node: { status: "ready", version: "3" },
+        pwsh: { status: "ready", version: "7.4.6" },
       }).toolchainReady,
       true,
+    );
+    assert.equal(
+      buildEnvironmentLaneView({
+        uv: { status: "ready", version: "1" },
+        git: { status: "ready", version: "2" },
+        node: { status: "ready", version: "3" },
+        pwsh: { status: "missing" },
+      }).toolchainReady,
+      false,
     );
   });
 
@@ -41,6 +53,7 @@ describe("buildEnvironmentLaneView", () => {
       uv: { status: "missing" },
       git: { status: "ready", version: "2" },
       node: { status: "ready", version: "3" },
+      pwsh: { status: "ready", version: "7" },
     });
     assert.match(view.tip ?? "", /終端/);
   });
@@ -57,6 +70,9 @@ describe("EnvironmentLaneService", () => {
       }
       if (tool === "git") {
         return { exitCode: 0, stdout: "git version 2.45.1\n" };
+      }
+      if (tool === "pwsh") {
+        return { exitCode: 0, stdout: "PowerShell 7.4.6\n" };
       }
       return {
         exitCode: 0,
@@ -83,6 +99,9 @@ describe("EnvironmentLaneService", () => {
       if (tool === "git") {
         return { exitCode: 1, stdout: "git version 2.45.1\n" };
       }
+      if (tool === "pwsh") {
+        return { exitCode: 1, stdout: "PowerShell 7.4.6\n" };
+      }
       return {
         exitCode: 1,
         stdout: "v22.11.0\n",
@@ -94,25 +113,34 @@ describe("EnvironmentLaneService", () => {
     assert.equal(lane.getView().tools.find((t) => t.id === "uv")?.status, "ready");
     assert.equal(lane.getView().tools.find((t) => t.id === "git")?.status, "ready");
     assert.equal(lane.getView().tools.find((t) => t.id === "node")?.status, "ready");
+    assert.equal(lane.getView().tools.find((t) => t.id === "pwsh")?.status, "ready");
     assert.equal(lane.getView().toolchainReady, true);
   });
 
-  it("does not mark Toolchain Ready when only Node is missing", async () => {
+  it("does not mark Toolchain Ready when only PowerShell 7 is missing", async () => {
     const probe: ProbeRunner = async (tool) => {
-      if (tool === "node") {
+      if (tool === "pwsh") {
         return { exitCode: 1, stdout: "" };
       }
       if (tool === "uv") {
         return { exitCode: 0, stdout: "uv 0.7.12\n" };
       }
-      return { exitCode: 0, stdout: "git version 2.45.1\n" };
+      if (tool === "git") {
+        return { exitCode: 0, stdout: "git version 2.45.1\n" };
+      }
+      return {
+        exitCode: 0,
+        stdout: "v22.11.0\n",
+        npm: { exitCode: 0, stdout: "10.9.0\n" },
+      };
     };
     const lane = new EnvironmentLaneService(probe);
     await lane.recheck();
     const view = lane.getView();
     assert.equal(view.tools.find((t) => t.id === "uv")?.status, "ready");
     assert.equal(view.tools.find((t) => t.id === "git")?.status, "ready");
-    assert.equal(view.tools.find((t) => t.id === "node")?.status, "missing");
+    assert.equal(view.tools.find((t) => t.id === "node")?.status, "ready");
+    assert.equal(view.tools.find((t) => t.id === "pwsh")?.status, "missing");
     assert.equal(view.toolchainReady, false);
   });
 });

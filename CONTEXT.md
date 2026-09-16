@@ -17,8 +17,8 @@ _Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單�
 _Avoid_: 欄位, 程式碼區塊（口頭可說、詞彙不用）, Action Kind `snippet`, `body` 改叫 `command` 或必填 `language`, 與安裝動作混成同一清單, 依進度解鎖, 老師上課中途即時推送, 以 Agent 提示詞為主用途, 插入游標處, 依路徑寫檔／File Asset, 宣稱 Pegasi 課堂已能保存片段
 
 **Environment Tool**:
-機器層級、固定清單的工具鏈成員（目前：uv、git、Node.js）；用來讓本課安裝動作跑得起來。
-_Avoid_: 全域模組, 系統套件（太寬）
+機器層級、固定清單的工具鏈成員（uv、git、Node.js、PowerShell 7）；用來讓本課安裝動作跑得起來。PowerShell 7 只認 `pwsh`，系統 PowerShell 5.1 不算。
+_Avoid_: 全域模組, 系統套件（太寬）, 把 `powershell.exe` 5.1 當 PowerShell 7
 
 **Course Catalog**:
 某一課堂的策展清單：頂層 `actions` 列出 Install Action，頂層 `snippets` 列出 Lesson Snippet。缺 `snippets` 或 `snippets: []` 都等於沒有片段，不是錯誤。`snippets` 若出現但形狀非法（含缺欄、重複 id），整份 Catalog 失敗，不回半套。有課堂連線時，權威來源是學生所連 **Router**（`vans_coding_router` 或 `pegasi_router`，由 `routerBaseUrl` 決定）上、該 Classroom API Key 所屬 Class Session 的 YAML，經獨立 GET 拉取（與兌換解耦）。拉取時機：兌換成功後、擴充啟動且本機已有 key 時自動拉、以及手動重新載入／再試遠端；課堂結束後仍可拉最後一版。成功結果只留在擴充記憶體，不寫回工作區 `classroom-installs.yaml`。擴充「手上沒有可用 YAML」時 fallback 讀工作區根目錄該檔。遠端合法但 `actions` 為空仍算「有 YAML」，不因此 fallback。Install Action 的 UI 在 Course Lane，Lesson Snippet 的 UI 在 Snippet Lane；使用 fallback 時顯示短提示並提供再試遠端。本期不做檔案資產一鍵進專案。不另開片段專用 API。
@@ -37,20 +37,20 @@ Router Lane 就緒時顯示的課堂識別文案（例如 class 名與 session �
 _Avoid_: 把 key 當顯示名, 僅記憶體暫存、重啟後消失卻仍稱已連線完整, 側邊欄常駐顯示 key
 
 **Environment Lane**:
-側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列、可同時使用）。不是 Course Lane 的先決條件。Windows 上 git／Node.js：本機有套件管理員（winget）時以 shell 安裝為主路徑，沒有則改開官方下載頁；uv 維持既有官方安裝腳本。macOS 上三個 Environment Tool 皆由擴充在整合終端機發起安裝，不把學生送到下載頁自行選檔：git 為 Xcode Command Line Tools；uv 為 Astral 官方腳本；Node 以 nvm 安裝當時的官方 LTS，並把 default 指到 LTS；nvm 安裝腳本不釘版本、每次取上游當時最新。不走 Homebrew、也不開官方 .pkg。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。官方安裝器明確表示已安裝／不必再裝時，視同本次流程成功（仍請重開終端），不當失敗。
-_Avoid_: Windows 上 git／Node 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, Mac Node 只開官網當唯一路徑, Mac Node 預設 Homebrew 或官方 .pkg, 把 Mac nvm 釘死某一主版號（如永遠 24）, 釘死 nvm 安裝腳本的版本號, 凍結 macOS 安裝路徑, 沒有 nvm 仍要求學生先手動裝 nvm, Linux 保證, 當作本課安裝前必須先過的關卡, 把 already installed 當安裝失敗, 把泛用結束碼 1 當成已安裝
+側邊欄中負責檢查／安裝 Environment Tool 的區塊；學生可整區收合／展開（在 Router Lane 之下，與 Course Lane 並列、可同時使用）。不是 Course Lane 的先決條件。清單順序固定為 uv、git、Node.js、PowerShell 7。Windows 上 git／Node.js／PowerShell 7：本機有套件管理員（winget）時以 shell 安裝為主路徑，三條都加同一組安靜旗標（source winget、disable-interactivity、silent、兩條 accept）；沒有則改開官方下載或 Learn 安裝頁；uv 維持既有官方安裝腳本。macOS 上 uv／git／Node 仍由擴充在整合終端機發起安裝，不把學生送到下載頁自行選檔：git 為 Xcode Command Line Tools；uv 為 Astral 官方腳本；Node 以 nvm 安裝當時的官方 LTS，並把 default 指到 LTS；nvm 安裝腳本不釘版本、每次取上游當時最新。macOS PowerShell 7 開啟 Microsoft Learn〈Install PowerShell on macOS〉，不走 Homebrew、擴充不 sudo。不開官方 Node .pkg。任一安裝成功後仍請學生重開終端再重新檢查，不直接標就緒。官方安裝器明確表示已安裝／不必再裝時，視同本次流程成功（仍請重開終端），不當失敗。
+_Avoid_: Windows 上 git／Node／PowerShell 7 只開下載頁當唯一路徑, 無 winget 仍強制 winget, 裝完自動標就緒而不重開終端, Mac Node 只開官網當唯一路徑, Mac Node 預設 Homebrew 或官方 .pkg, Mac PowerShell 7 走 Homebrew 或擴充 `sudo tar`, 把 Mac nvm 釘死某一主版號（如永遠 24）, 釘死 nvm 安裝腳本的版本號, 凍結 macOS 安裝路徑, 沒有 nvm 仍要求學生先手動裝 nvm, Linux 保證, 當作本課安裝前必須先過的關卡, 把 already installed 當安裝失敗, 把泛用結束碼 1 當成已安裝
 
 **Course Lane**:
 側邊欄中列出 Course Catalog 的 Install Action 並觸發執行的扁平清單區塊；學生可整區收合／展開。不分依 Action Kind 的子區。清單來源可來自 Session Catalog 或本機 fallback，但展示與點選仍在此區，不併進 Router Lane，也不承載 Lesson Snippet。與 Environment Lane 可並行：Environment Tool 未就緒時，清單與單一動作仍可點；擴充不因缺工具而禁用或拒絕執行。
-_Avoid_: 把安裝清單 UI 併進課堂連線區, 把本課片段塞進本課安裝區, 連線成功後自動跑完所有動作, 依缺 uv／git 禁用對應動作, 三工具未齊就鎖整區, 為寫 Workspace MCP Config 而注入 Classroom API Key, 缺 Classroom API Key 就禁用本課動作
+_Avoid_: 把安裝清單 UI 併進課堂連線區, 把本課片段塞進本課安裝區, 連線成功後自動跑完所有動作, 依缺 uv／git／pwsh 禁用對應動作, 四工具未齊就鎖整區, 為寫 Workspace MCP Config 而注入 Classroom API Key, 缺 Classroom API Key 就禁用本課動作
 
 **Snippet Lane**:
 側邊欄第四區，學生可見標題「本課片段」，位於 Course Lane 正下方；列出本課 Lesson Snippet，學生可整區收合／展開。Catalog 沒有任何片段時整區不出現。每張卡：清單順序編號、`title`、有則顯示 `paste_hint`、約四行 `body` 預覽、主按鈕「複製」寫入完整 `body`。同一時間只展開一則全文（手風琴）。複製成功為短訊「已複製「〈title〉」。」；失敗為「無法複製本課片段。」不回顯 `body`、不寫勿分享。Catalog 整份失敗時此區不出現，錯誤仍只顯示在 Course Lane。
 _Avoid_: 與安裝動作同一區, 沒有片段仍顯示空殼, 第四區放到 Course Lane 之上, 複製前再跳確認框（與執行 command 不同）, 永遠攤開全文, 多則同時展開全文, 只放複製 icon 當唯一入口, 複製預覽而非完整 body, 兩區各顯示一份 Catalog 錯誤, 成功文案寫勿分享
 
 **Toolchain Ready**:
-uv、git、Node.js 三者皆以接近學生預期的 shell PATH 偵測為可用（stdout 有可解析的版本行）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關，也不要求版本命令結束碼為 0。macOS 探測（主路徑與後備）須載入使用者本機 bin（如 `~/.local/bin`）；nvm 只接在 Node 探測，不得拖垮 uv／git。只服務 Environment Lane 的總覽／徽章；不是 Course Lane 的總開關，也不用來啟用或禁用單一 Install Action。
-_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 三工具未齊就不能裝任何本課項目, 依各動作所需工具是否就緒來啟用本課動作, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準, 結束碼非 0 就當未安裝（即使已印版本）, uv／git 探測因 nvm.sh 失敗而顯示未安裝
+uv、git、Node.js、PowerShell 7 四者皆以接近學生預期的 shell PATH 偵測為可用（stdout 有可解析的版本行）的總覽狀態：優先 **VS Code** 整合終端，Shell Integration 不可用時可改以系統／登入殼 PATH；與是否由本擴充功能安裝無關，也不要求版本命令結束碼為 0。PowerShell 7 只認 `pwsh` 的可解析版本行，不認 `powershell.exe` 5.1。macOS 探測（主路徑與後備）須載入使用者本機 bin（如 `~/.local/bin`）；nvm 只接在 Node 探測，不得拖垮 uv／git／pwsh。只服務 Environment Lane 的總覽／徽章；不是 Course Lane 的總開關，也不用來啟用或禁用單一 Install Action。
+_Avoid_: 環境安裝完成（未說明偵測基準）, 本擴充功能已執行安裝（不足以代表就緒）, 四工具未齊就不能裝任何本課項目, 依各動作所需工具是否就緒來啟用本課動作, 僅編輯器行程啟動當下 PATH, macOS 上只跑 node --version 卻不載入 nvm, 只靠 zsh -lc 當 Mac 唯一探測, 以 Cursor 為探測設計基準, 結束碼非 0 就當未安裝（即使已印版本）, uv／git／pwsh 探測因 nvm.sh 失敗而顯示未安裝, 把 Windows PowerShell 5.1 算進 Toolchain Ready
 
 **Branded Distribution**:
 同一套課堂安裝產品的市集／VSIX 發行身分。本 repo 是凡思發行；Pegasi 為另一個 Branded Distribution（獨立 repo，`upstream` 指回本 repo）。差異限於顯示名稱、圖示、強調色、extension id、預設 `routerBaseUrl`，以及 Nickname Redeem（只存在於凡思 Router；Pegasi 永不做這條路，學生仍走 Google + Sign-in Handoff）。Install Action／Lesson Snippet／Catalog GET 契約不為品牌各寫一套。

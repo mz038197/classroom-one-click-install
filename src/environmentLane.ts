@@ -19,7 +19,7 @@ export type EnvironmentInstallDeps = {
   platform: InstallPlatform;
   confirm: (title: string, detail: string) => Promise<boolean>;
   execute: (plan: EnvironmentInstallPlan) => Promise<InstallExecuteResult>;
-  /** Windows: prefer winget shell plans for git/Node when true. */
+  /** Windows: prefer winget shell plans for git/Node/PowerShell 7 when true. */
   wingetAvailable?: () => Promise<boolean>;
 };
 
@@ -50,12 +50,13 @@ type Overlay =
   | { kind: "failed"; detail: string }
   | { kind: "installing" };
 
-const TOOL_ORDER: readonly EnvironmentToolId[] = ["uv", "git", "node"];
+const TOOL_ORDER: readonly EnvironmentToolId[] = ["uv", "git", "node", "pwsh"];
 
 const TOOL_LABEL: Record<EnvironmentToolId, string> = {
   uv: "uv",
   git: "git",
   node: "Node.js",
+  pwsh: "PowerShell 7",
 };
 
 const REOPEN_DETAIL = "請重開終端機再重新檢查";
@@ -136,6 +137,7 @@ const UNKNOWN: ToolStatusMap = {
   uv: { status: "missing" },
   git: { status: "missing" },
   node: { status: "missing" },
+  pwsh: { status: "missing" },
 };
 
 /** Environment Lane：偵測／重新檢查／安裝與請重開終端。 */

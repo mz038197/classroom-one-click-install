@@ -42,4 +42,15 @@ describe("buildEnvironmentInstallConfirm", () => {
     assert.match(confirm.detail, /將執行：/);
     assert.doesNotMatch(confirm.detail, /nodejs\.org|\.pkg/);
   });
+
+  it("titles PowerShell 7 install and lists the Learn URL on macOS", () => {
+    const plan = resolveEnvironmentInstallPlan("pwsh", "darwin");
+    const confirm = buildEnvironmentInstallConfirm(plan, "missing");
+    assert.match(confirm.title, /安裝 PowerShell 7/);
+    assert.match(confirm.detail, /將開啟：/);
+    assert.match(
+      confirm.detail,
+      /learn\.microsoft\.com\/powershell\/scripting\/install\/install-powershell-on-macos/,
+    );
+  });
 });

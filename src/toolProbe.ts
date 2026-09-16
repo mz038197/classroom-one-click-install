@@ -1,4 +1,4 @@
-export type EnvironmentToolId = "uv" | "git" | "node";
+export type EnvironmentToolId = "uv" | "git" | "node" | "pwsh";
 
 export type ProbeCommandResult = {
   exitCode: number;
@@ -39,6 +39,15 @@ function matchNpmVersion(line: string): string | undefined {
   return /^\d+\.\d+/.test(line) ? line : undefined;
 }
 
+function matchPwshVersion(line: string): string | undefined {
+  const named = /^(?:PowerShell|pwsh)\s+(\d+\.\d+\S*)/i.exec(line);
+  if (!named?.[1]) {
+    return undefined;
+  }
+  const major = Number.parseInt(named[1], 10);
+  return major >= 7 ? named[1] : undefined;
+}
+
 function findVersion(
   stdout: string,
   matchLine: (line: string) => string | undefined,
@@ -68,7 +77,12 @@ export function parseToolProbeResult(
     return { status: "ready", version };
   }
 
-  const matchLine = tool === "uv" ? matchUvVersion : matchGitVersion;
+  const matchLine =
+    tool === "uv"
+      ? matchUvVersion
+      : tool === "git"
+        ? matchGitVersion
+        : matchPwshVersion;
   const version = findVersion(input.stdout, matchLine);
   if (!version) {
     return { status: "missing" };

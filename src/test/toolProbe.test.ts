@@ -67,6 +67,34 @@ describe("parseToolProbeResult", () => {
     );
   });
 
+  it("marks PowerShell 7 ready from a parseable pwsh version line", () => {
+    assert.deepEqual(
+      parseToolProbeResult("pwsh", {
+        exitCode: 1,
+        stdout: "PowerShell 7.4.6\n",
+      }),
+      { status: "ready", version: "7.4.6" },
+    );
+  });
+
+  it("does not treat Windows PowerShell 5.1 output as PowerShell 7", () => {
+    assert.deepEqual(
+      parseToolProbeResult("pwsh", {
+        exitCode: 0,
+        stdout:
+          "Major  Minor  Build  Revision\n-----  -----  -----  --------\n5      1      22621  4391\n",
+      }),
+      { status: "missing" },
+    );
+    assert.deepEqual(
+      parseToolProbeResult("pwsh", {
+        exitCode: 0,
+        stdout: "PowerShell 5.1.22621.4391\n",
+      }),
+      { status: "missing" },
+    );
+  });
+
   it("requires both node and npm for Node readiness", () => {
     assert.deepEqual(
       parseToolProbeResult("node", {

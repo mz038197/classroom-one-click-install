@@ -23,6 +23,9 @@ describe("environmentProbeCommands", () => {
       "node --version",
       "npm --version",
     ]);
+    assert.deepEqual(environmentProbeCommands("pwsh", "win32"), [
+      "pwsh --version",
+    ]);
   });
 
   it("wraps uv/git/node for VS Code unix probe (SI and fallback)", () => {
@@ -37,6 +40,10 @@ describe("environmentProbeCommands", () => {
     assert.doesNotMatch(uv, /nvm\.sh/);
     assert.match(git, /git --version$/);
     assert.doesNotMatch(git, /nvm\.sh/);
+    const pwsh = environmentProbeCommands("pwsh", "darwin")[0]!;
+    assert.match(pwsh, /pwsh --version$/);
+    assert.doesNotMatch(pwsh, /nvm\.sh/);
+    assert.match(pwsh, /\$HOME\/\.local\/bin/);
   });
 });
 

@@ -3,7 +3,7 @@ import type { EnvironmentToolId } from "./toolProbe";
 export type InstallPlatform = "win32" | "darwin";
 
 export type ResolveEnvironmentInstallPlanOptions = {
-  /** When true on win32, git/Node use winget shell plans. */
+  /** When true on win32, git/Node/PowerShell 7 use winget shell plans. */
   wingetAvailable?: boolean;
 };
 
@@ -19,8 +19,12 @@ export type EnvironmentInstallPlan = {
   previewCommand?: string;
 };
 
-const WINGET_ACCEPT =
-  "--accept-package-agreements --accept-source-agreements";
+const WINGET_QUIET =
+  "--source winget --disable-interactivity -h --accept-package-agreements --accept-source-agreements";
+
+function wingetInstall(id: string): string {
+  return `winget install --id ${id} -e ${WINGET_QUIET}`;
+}
 
 /** 規格／研究票預設安裝路徑（不提權、不繞過 MDM）。 */
 export function resolveEnvironmentInstallPlan(
@@ -60,7 +64,7 @@ export function resolveEnvironmentInstallPlan(
           tool,
           platform,
           kind: "shell",
-          commandOrUrl: `winget install --id Git.Git -e ${WINGET_ACCEPT}`,
+          commandOrUrl: wingetInstall("Git.Git"),
           summary:
             "將以 winget 安裝 Git for Windows（可能出現 UAC／需 IT；不會嘗試提權）。",
         };
@@ -84,6 +88,39 @@ export function resolveEnvironmentInstallPlan(
     };
   }
 
+  if (tool === "pwsh") {
+    if (platform === "win32") {
+      if (options.wingetAvailable) {
+        return {
+          tool,
+          platform,
+          kind: "shell",
+          commandOrUrl: wingetInstall("Microsoft.PowerShell"),
+          summary:
+            "將以 winget 安裝 PowerShell 7（可能出現 UAC／需 IT；不會嘗試提權）。系統 PowerShell 5.1 不算。",
+        };
+      }
+      return {
+        tool,
+        platform,
+        kind: "open-url",
+        commandOrUrl:
+          "https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows",
+        summary:
+          "將開啟 Microsoft Learn〈Install PowerShell on Windows〉；請依說明安裝 PowerShell 7（可能出現 UAC／需 IT）。系統 PowerShell 5.1 不算。",
+      };
+    }
+    return {
+      tool,
+      platform,
+      kind: "open-url",
+      commandOrUrl:
+        "https://learn.microsoft.com/powershell/scripting/install/install-powershell-on-macos",
+      summary:
+        "將開啟 Microsoft Learn〈Install PowerShell on macOS〉。請依說明選對 arm64 或 x64 的 .pkg；系統安裝器可能要管理員密碼。開頁並不代表已就緒。",
+    };
+  }
+
   // node
   if (platform === "win32") {
     if (options.wingetAvailable) {
@@ -91,7 +128,7 @@ export function resolveEnvironmentInstallPlan(
         tool,
         platform,
         kind: "shell",
-        commandOrUrl: `winget install --id OpenJS.NodeJS.LTS -e ${WINGET_ACCEPT}`,
+        commandOrUrl: wingetInstall("OpenJS.NodeJS.LTS"),
         summary:
           "將以 winget 安裝 Node.js LTS（可能出現 UAC／需 IT；不會嘗試提權）。",
       };
