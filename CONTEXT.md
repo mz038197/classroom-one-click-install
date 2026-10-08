@@ -1,6 +1,6 @@
 # Classroom One-Click Install
 
-課堂用編輯器擴充功能：學生點選項目以完成環境工具或本課安裝動作，可複製本課片段，並可在擴充內完成 router 邀請兌換與 BYOK 設定。此檔只記領域用語。
+課堂安裝的領域用語。現在的學生表面是 VS Code 擴充。Classroom App 五項都齊才取代它，成為唯一學生表面。此檔只記領域用語。
 
 ## Language
 
@@ -13,7 +13,7 @@ _Avoid_: 模組（單獨使用時易與 Python module 混淆）, package name（
 _Avoid_: Action Group, 巢狀 groups, 依種類自動分區收合, 模組（單獨當領域詞或第四種 kind）, 開放任意字串 kind, 用 kind 驅動安裝邏輯, 用 kind:mcp 寫 .vscode/mcp.json, `asset`／`files`／`material`／`snippet` 當新 kind
 
 **Lesson Snippet**:
-老師策展、學生可複製到剪貼簿的一則本課文字；本期以貼進專案檔的起步程式為主。寫在 Course Catalog 頂層 `snippets`：必填 `id`／`title`／`body`，選填 `paste_hint`（只顯示「貼進哪裡」，不寫檔）。`body` 原樣保留，不 trim，不是 `command`。同一 `snippets` 陣列內 `id` 不可重複。Snippet Lane 依陣列順序編號並一次全部列出。點選只寫系統剪貼簿，不執行、不插入游標、不寫入工作區檔。Portal 存檔 round-trip 本期只改 `vans_coding_router`；`pegasi_router` 仍只重寫 `actions`，Pegasi 老師寫入的 `snippets` 存檔會消失，直到另開票。
+老師策展、學生可複製到剪貼簿的一則本課文字；本期以貼進專案檔的起步程式為主。寫在 Course Catalog 頂層 `snippets`：必填 `id`／`title`／`body`，選填 `paste_hint`（只顯示「貼進哪裡」，不寫檔）。`body` 原樣保留，不 trim，不是 `command`。同一 `snippets` 陣列內 `id` 不可重複。Snippet Lane 依陣列順序編號並一次全部列出。點選只寫系統剪貼簿，不執行、不插入游標、不寫入工作區檔。Classroom App 改為顯示完整 `body` 供學生複製，仍不寫檔。Portal 存檔 round-trip 本期只改 `vans_coding_router`；`pegasi_router` 仍只重寫 `actions`，Pegasi 老師寫入的 `snippets` 存檔會消失，直到另開票。
 _Avoid_: 欄位, 程式碼區塊（口頭可說、詞彙不用）, Action Kind `snippet`, `body` 改叫 `command` 或必填 `language`, 與安裝動作混成同一清單, 依進度解鎖, 老師上課中途即時推送, 以 Agent 提示詞為主用途, 插入游標處, 依路徑寫檔／File Asset, 宣稱 Pegasi 課堂已能保存片段
 
 **Environment Tool**:
@@ -21,7 +21,7 @@ _Avoid_: 欄位, 程式碼區塊（口頭可說、詞彙不用）, Action Kind `
 _Avoid_: 全域模組, 系統套件（太寬）, 把 `powershell.exe` 5.1 當 PowerShell 7
 
 **Course Catalog**:
-某一課堂的策展清單：頂層 `actions` 列出 Install Action，頂層 `snippets` 列出 Lesson Snippet。缺 `snippets` 或 `snippets: []` 都等於沒有片段，不是錯誤。`snippets` 若出現但形狀非法（含缺欄、重複 id），整份 Catalog 失敗，不回半套。有課堂連線時，權威來源是學生所連 **Router**（`vans_coding_router` 或 `pegasi_router`，由 `routerBaseUrl` 決定）上、該 Classroom API Key 所屬 Class Session 的 YAML，經獨立 GET 拉取（與兌換解耦）。拉取時機：兌換成功後、擴充啟動且本機已有 key 時自動拉、以及手動重新載入／再試遠端；課堂結束後仍可拉最後一版。成功結果只留在擴充記憶體，不寫回工作區 `classroom-installs.yaml`。擴充「手上沒有可用 YAML」時 fallback 讀工作區根目錄該檔。遠端合法但 `actions` 為空仍算「有 YAML」，不因此 fallback。Install Action 的 UI 在 Course Lane，Lesson Snippet 的 UI 在 Snippet Lane；使用 fallback 時顯示短提示並提供再試遠端。本期不做檔案資產一鍵進專案。不另開片段專用 API。
+某一課堂的策展清單：頂層 `actions` 列出 Install Action，頂層 `snippets` 列出 Lesson Snippet。缺 `snippets` 或 `snippets: []` 都等於沒有片段，不是錯誤。`snippets` 若出現但形狀非法（含缺欄、重複 id），整份 Catalog 失敗，不回半套。有課堂連線時，權威來源是學生所連 **Router**（`vans_coding_router` 或 `pegasi_router`，由 `routerBaseUrl` 決定）上、該 Classroom API Key 所屬 Class Session 的 YAML，經獨立 GET 拉取（與兌換解耦）。拉取時機：兌換成功後、擴充啟動且本機已有 key 時自動拉、以及手動重新載入／再試遠端；課堂結束後仍可拉最後一版。成功結果只留在記憶體，不寫回工作區 `classroom-installs.yaml`。擴充或 Classroom App「手上沒有可用 YAML」時 fallback 讀工作區根目錄該檔，並標明是本機清單。遠端合法但 `actions` 為空仍算「有 YAML」，不因此 fallback。Install Action 的 UI 在 Course Lane，Lesson Snippet 的 UI 在 Snippet Lane；使用 fallback 時顯示短提示並提供再試遠端。本期不做檔案資產一鍵進專案。不另開片段專用 API。
 _Avoid_: 巢狀 `groups`（已撤回）, 應用內建唯一清單, 多份並行清單（同一學生同時多份有效 catalog）, 僅工作區根目錄 YAML 當唯一真相（已撤回）, 輪詢自動更新, 本機覆蓋遠端, 把遠端 catalog 寫進學生專案檔, 一級 File Asset／新 asset kind（本期不做）, 把清單 UI 併進 Router Lane, 靜默 fallback, 把空的遠端 `actions` 當成失敗, 只做 Vans Router 不做 Pegasi, 片段與安裝分兩次拉取, `snippets` 寫壞仍只出安裝清單, 存檔 normalize 只重寫 `actions` 而丢掉 `snippets`, 把 Session Model Allowlist 寫進同一份 YAML
 
 **Router**:
@@ -73,15 +73,15 @@ _Avoid_: 把 Class Session 當成 Class, 用 Course Catalog 當班
 _Avoid_: Guest, Guest User, 登入名, 用 email 當身分, 學號當獨立身分欄, 自動合併 Google, 拆開撞名, 摺疊大小寫或中間空白
 
 **Nickname Redeem**:
-用 Invite Code 加上 Classroom Nickname 兌換該 Class Session 的 Classroom API Key。只出現在凡思 Router、VS Code 的 Router Lane；不做 Portal 網頁、不為 Cursor 設計。每個 Class Session 預設允許，受 Session Seat Limit 限制，門檻是有效邀請碼（不是 Portal 開放註冊），不經 Google、也不經 Sign-in Handoff。Pegasi Router 沒有這條路。
-_Avoid_: Guest redeem, 全班共用一把 key, 教師長效 key, 把這條路叫「連線登入」, Pegasi 也做暱稱兌換, Portal 網頁暱稱兌換, Cursor Nickname Redeem
+用 Invite Code 加上 Classroom Nickname 兌換該 Class Session 的 Classroom API Key。只出現在凡思 Router。擴充還在時，學生入口是 VS Code 的 Router Lane。Classroom App 給學生用之後，入口只在 Classroom App。不做 Portal 網頁、不為 Cursor 設計。每個 Class Session 預設允許，受 Session Seat Limit 限制，門檻是有效邀請碼（不是 Portal 開放註冊），不經 Google、也不經 Sign-in Handoff。Pegasi Router 沒有這條路。
+_Avoid_: Guest redeem, 全班共用一把 key, 教師長效 key, 把這條路叫「連線登入」, Pegasi 也做暱稱兌換, Portal 網頁暱稱兌換, Cursor Nickname Redeem, 只放在 VS Code, Classroom App 另做 Google 登入, Classroom App 做 Pegasi
 
 **Session Seat Limit**:
 教師為單一 Class Session 設定、可 Nickname Redeem 的不同 Classroom Nickname 上限。預設 60，教師可改。已有的暱稱重連不佔新名額；Google 兌換不計入。滿了則新暱稱被拒。
 _Avoid_: 全班共用 key 的額度, open_registration, 用此上限去限制 Google 學生
 
 **Session Model Allowlist**:
-老師在 Portal 的 Session 設定頁、為單一 Class Session 策展的可用模型子集。候選只能來自 Router Model Template 裡已有的模型 id；本期不另做建議短清單、Class 預設清單或依上游整包勾選。未設定時視同允許 template 全集；明確存成空清單則不允許任何課堂模型。學生端與備援腳本打同一支 `GET /extension/chat-language-models`：帶 Classroom API Key 時回傳該寫入的 VCRouter 模型（未設定＝template 全集，空清單＝沒有模型）；擴充不自己解釋未設定／空。拉取時機與 Course Catalog 相同：兌換成功後、啟動且已有 key、手動重新載入／再試；不輪詢、不推送。Allowlist 上但不在 Template 的 id 只寫交集。BYOK Setup 把本機 VCRouter 模型同步成此清單（不在清單上的刪掉）。Router 對該 Session 的 Classroom API Key 也拒絕清單外的模型。Portal 備援 `install-vscode-models.cmd` 寫入同一份清單。不是 Install Action，也不是 Lesson Snippet，不寫進 Course Catalog。側邊欄不另列可用模型。
+老師在 Portal 的 Session 設定頁、為單一 Class Session 策展的可用模型子集。Codex App 的 Model Switch 在 Classroom 態使用的就是這份清單。候選只能來自 Router Model Template 裡已有的模型 id；本期不另做建議短清單、Class 預設清單或依上游整包勾選。未設定時視同允許 template 全集；明確存成空清單則不允許任何課堂模型。學生端與備援腳本打同一支 `GET /extension/chat-language-models`：帶 Classroom API Key 時回傳該寫入的 VCRouter 模型（未設定＝template 全集，空清單＝沒有模型）；擴充不自己解釋未設定／空。拉取時機與 Course Catalog 相同：兌換成功後、啟動且已有 key、手動重新載入／再試；不輪詢、不推送。Allowlist 上但不在 Template 的 id 只寫交集。BYOK Setup 把本機 VCRouter 模型同步成此清單（不在清單上的刪掉）。Router 對該 Session 的 Classroom API Key 也拒絕清單外的模型。Portal 備援 `install-vscode-models.cmd` 寫入同一份清單。不是 Install Action，也不是 Lesson Snippet，不寫進 Course Catalog。側邊欄不另列可用模型。
 _Avoid_: 預設模型, 用來隱藏學生其他 provider, Class 層級共用清單, 擴充內建寫死的模型表, 新的 Action Kind, 塞進 Course Catalog YAML, 只改 Copilot 清單、router 不拒, 學生自己的 OpenRouter／Ollama 當候選來源, 全站第二層建議清單, 輪詢或老師一按推送到學生, 備援腳本寫 template 全集而不看 Allowlist, 另開 session-model-allowlist GET, 把 Allowlist 塞進兌換回應, 帶 key 的 GET 失敗就改寫 template 全集
 
 **Invite Code**:
@@ -93,11 +93,11 @@ _Avoid_: API key, session token, 邀請連結（若指整段 URL）, 把 Classro
 _Avoid_: Portal session, Google token, upstream provider key, 在 Webview 常駐或展開顯示完整 `vcr_sk_…`, 把 key 寫進確認框或 command 字串, 把明文 key 寫進 chatLanguageModels.json 的 apiKey, 把明文 Bearer 寫進 .vscode/mcp.json
 
 **Copy Classroom API Key**:
-學生在本機已有 Classroom API Key（Router Lane 為已設定）時，於該區已顯示的「Classroom API Key」文案右側點「複製」icon，把 key 寫入系統剪貼簿；供貼到 Portal、其他工具或除錯協助。不在 UI 渲染 key 本體；不另做獨立長文案按鈕或命令面板唯一入口。成功回饋為一則短訊（已複製＋勿分享給不信任的人）；失敗同為短句且不回顯 key。凡思與 Pegasi、VS Code 與 Cursor 行為相同。該控制位於 Clear Classroom Connection 之上；清除後入口隨已設定狀態消失；不嘗試清空系統剪貼簿。
+學生在本機已有 Classroom API Key 時，把 key 寫入系統剪貼簿。擴充在 Router Lane。Classroom App 在已連線時同樣提供，畫面不顯示 key 明文。成功回饋為一則短訊（已複製＋勿分享給不信任的人）。失敗同為短句且不回顯 key。清除連線後入口消失。不嘗試清空系統剪貼簿。
 _Avoid_: 複製 Sign-in Handoff, 複製 Invite Code, 僅兌換成功當下可複製之後不可再拿, 靠畫面選取明文再複製, 側邊欄展開或常駐顯示完整 key, 命令面板為唯一入口, 只在單一 Host 或單一 Branded Distribution 提供, 每次複製前強制確認對話框, 清除連線時清空剪貼簿, 另做與「Classroom API Key」文案脫節的第二顆主按鈕當唯一複製入口
 
 **Clear Classroom Connection**:
-學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，清除本機保存的 Class Label，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter），也不刪 Workspace MCP Config。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
+學生主動清除本機課堂連線：先刪 Host／擴充內的 Classroom API Key，再移除 VCRouter provider，清除本機保存的 Class Label，並將 Router Lane 重置為未兌換；不動其他 provider（如 OpenRouter），也不刪 Workspace MCP Config。在 Codex App，同時把 Model Switch 退回 Native。若本機 state DB 忙碌無法完成，不把內部錯誤原文給學生，引導 Host Full Restart 後再執行一次清除。
 _Avoid_: 只清側邊欄狀態卻留 key, 清掉學生其他 BYOK, 每次兌換換新 secret id 造成堆積, 先改 JSON 再刪 key 導致半清, 對學生顯示 database is locked, 清除連線後仍留下 Class Label, 清除連線時刪掉 .vscode/mcp.json
 
 **Sign-in Handoff**:
@@ -106,7 +106,7 @@ _Avoid_: session credential（常駐）, API key in URI, oauth_state cookie, 失
 
 **Workspace MCP Config**:
 工作區 `.vscode/mcp.json` 裡由本課安裝寫入的課堂 MCP（server 名 `vans-mcp`）。Authorization 使用 VS Code input variable（`${input:vcr_api_key}` 加上對應 `inputs`），檔內不含 Classroom API Key 明文。只保證 VS Code。與 Action Kind `mcp`（純顯示 tag）不是同一件事，也不是 Python 客戶端的 `peas-mcp.json`。清連線不刪；已有檔則只更新 `vans-mcp` 與該 input。不含密件，不必為此 gitignore。
-_Avoid_: 登入／BYOK 後自動寫 MCP, user 層 mcp.json 當本課安裝結果, 用 kind:mcp 驅動寫檔, 把 peas-mcp.json 當成編輯器 MCP, 整份覆寫學生其他 MCP server, 在 Cursor 保證一鍵連上, 明文 Bearer 寫進 mcp.json, 把無密件的 mcp.json 當機密列入 gitignore, 為寫此檔而注入終端機環境變數
+_Avoid_: 登入／BYOK 後自動寫 MCP, user 層 mcp.json 當本課安裝結果, 用 kind:mcp 驅動寫檔, 把 peas-mcp.json 當成編輯器 MCP, 整份覆寫學生其他 MCP server, 在 Cursor 保證一鍵連上, 明文 Bearer 寫進 mcp.json, 把無密件的 mcp.json 當機密列入 gitignore, 為寫此檔而注入終端機環境變數, 用這份檔當成 Codex App 的課堂 MCP, Classroom App 在 command 之外另寫 Codex 或 Claude 的 MCP 設定
 
 **Router Model Template**:
 router 對所有 Class Session 提供的 VCRouter 模型全集。同一支 `GET /extension/chat-language-models`：不帶 Classroom API Key 時回這份全集（Portal 老師候選）；帶 key 時回該 Session 該寫入的子集。Session Model Allowlist 是它的子集。未設定 Allowlist 時，帶 key 的回應等於這份全集。擴充連線只打帶 key 的 GET，不在兌換前預檢 Template。模型 id 上的 `openrouter@`／`ollama_cloud@` 是 router 上游前綴，仍是 VCRouter 的一筆，不是學生自己加的 OpenRouter 或 Ollama provider。
@@ -114,7 +114,35 @@ _Avoid_: 學生自己的 OpenRouter／Ollama provider, 每堂自訂 url 的模�
 
 **BYOK Setup**:
 把 router 的模型清單與 Classroom API Key 寫入**目前正在執行本擴充的**那個編輯器之語言模型／自訂端點設定，使 Copilot（或同等客戶端）能走課堂 router。`chatLanguageModels.json` 的 `apiKey` 必須是 Host 的 secret 參照（如 `${input:chat.lm.secret.…}`）；Classroom API Key 本體進 Host secret storage，不把 `vcr_sk_…` 明文當 `apiKey` 字串。僅支援 VS Code；Cursor 不自動寫入，改提示 Portal／手動。不一次改寫其他編輯器產品的設定路徑。模型清單向 router 拉取（單一真相在 router），不打包死在擴充裡。連線路徑為兌換後打帶 key 的 `GET /extension/chat-language-models`；不在兌換前打未帶 key 的 Template。實際寫入只信兌換後帶 key 的回應。帶 key 的 GET 失敗時留下已兌到的 key，不覆寫本機 VCRouter，不把 Template 全集當 fallback，也不跳 Host Full Restart；之後「重新載入／再試遠端」再打同一支 GET，寫入且清單有變才請重啟。寫入的 VCRouter 模型以該 Class Session 的 Session Model Allowlist 為準；本機已有、但不在清單上的 VCRouter 模型要刪掉。拉取時機與 Course Catalog 相同。兌換成功且本次有寫入模型時請 Host Full Restart。Portal 備援腳本走同一份清單。不含 Workspace MCP Config。
-_Avoid_: 下載並執行 install-vscode-models.cmd 卻寫入 template 全集（備援仍須守 Allowlist）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret, 兌換成功後順便寫 .vscode/mcp.json, 帶 key 失敗就寫 Template 全集, 兌換前打未帶 key 的 Template 當連線門檻, 帶 key 失敗仍跳 Host Full Restart, 模型集合沒變仍強迫重啟, 只用 Reload Window 讓新模型清單生效
+_Avoid_: 下載並執行 install-vscode-models.cmd 卻寫入 template 全集（備援仍須守 Allowlist）, 只合併模型卻不處理 key, 明文 Classroom API Key 寫進 `apiKey`, 一次寫入多個編輯器產品路徑, 以擴充內建 template 為唯一來源, 在 Cursor 自動寫 Host secret, 兌換成功後順便寫 .vscode/mcp.json, 帶 key 失敗就寫 Template 全集, 兌換前打未帶 key 的 Template 當連線門檻, 帶 key 失敗仍跳 Host Full Restart, 模型集合沒變仍強迫重啟, 只用 Reload Window 讓新模型清單生效, 把 Codex App 的 Model Switch 叫做 BYOK Setup, 擴充與 Model Switch 的 app 同時寫 `chatLanguageModels.json`
+
+**Classroom App**:
+取代凡思課堂安裝擴充的本機 app，只做凡思。連線只有 Nickname Redeem，沒有 Google、沒有 Pegasi。Nickname Redeem、環境工具、本課安裝動作、本課片段、Model Switch 五項都齊，才給學生用，同時擴充退場。環境工具沿用擴充的固定四項與一次確認。本課動作與 MCP 只執行 catalog 裡的 command，不另寫 Codex 或 Claude 的 MCP 設定。本課動作先顯示完整 command，學生確認後在 Project Folder 執行並顯示輸出。一次只跑一個 command。進行中不能換 Project Folder，也不能再啟動另一個。進行中仍可使用 Model Switch。關掉視窗不停止本機代理。要停代理須另外按停止。停止時拿掉 Codex 與 Claude Code 的路由覆寫，讓它們直接走自己的登入。下次開啟 app，再依當時的 Model Switch 把路由指回代理。停止期間 Copilot 的內建模型仍可用。選 VCRouter 會失敗，直到 app 再打開。
+_Avoid_: 與擴充長期並存, 只做模型開關而把安裝留在擴充, 半套先上、擴充補洞, Codex plugin, opencodex, Classroom Card, Pegasi, Google 登入, 自動偵測專案資料夾, 在 command 之外另寫 MCP 設定, Cursor 學生繼續靠這包擴充, 指令進行中還能換資料夾或再啟動另一個 command, 關視窗就停代理, 停止後路由仍指著 127.0.0.1, 不提供停止
+
+**Project Folder**:
+學生在 Classroom App 指定的一個資料夾。環境安裝、本課 command，以及本機 `classroom-installs.yaml` fallback，都對這個資料夾。沒指定時仍可兌換、拉遠端清單、使用 Model Switch。換資料夾要學生再指定。
+_Avoid_: 自動跟著 VS Code 或 Codex 目前視窗, 同時對多個資料夾, 沒指定資料夾仍執行安裝, 沒指定資料夾就不能兌換或切模型
+
+**Codex App**:
+學生用的 Codex，包含 ChatGPT 桌面版與 VS Code 裡的 Codex 擴充。兩者讀同一份使用者設定。與本專案的 VS Code 課堂擴充、以及 Copilot，不是同一個客戶端。
+_Avoid_: VS Code 課堂擴充, Copilot, VS Code 裡的 Claude Code 擴充, Classroom Card, 把 plugin 卡片當成學生表面
+
+**Native Codex Models**:
+學生以 ChatGPT 登入後，Codex 內建的模型。此態的請求不進 Router。
+_Avoid_: Router Model Template, 切換前已存在的自訂供應商模型, Session Model Allowlist, Native Claude Models
+
+**Native Claude Models**:
+學生以 claude.ai 登入後，Claude Code 內建的模型。此態的請求不進 Router。
+_Avoid_: Native Codex Models, Session Model Allowlist, 把 Allowlist 裡的 id 當成 Claude 模型
+
+**Native Copilot Models**:
+VS Code 裡 Copilot 內建的模型。此態的請求不進 Router，也不進本機代理。
+_Avoid_: Native Codex Models, Native Claude Models, Session Model Allowlist, VCRouter
+
+**Model Switch**:
+一個本機 app 上的同一開關，作用在這台電腦的 Codex 與 Claude Code。Classroom 態使用目前這把 Classroom API Key 所屬 Class Session 的 Session Model Allowlist，當下模型是 Router 回傳順序的第一個 id。換堂兌換後改用新堂清單的第一個 id。沒有 Classroom API Key、Allowlist 明確為空、或清除連線，都不能留在 Classroom 態。Allowlist 未設定不算空。再拉 Allowlist 失敗時留在 Classroom 態，繼續用上一份成功的清單，不退回 Native，也不改寫成 Template 全集。Native 態回到該客戶端自己的模型，不是切換前的第三方路由。Codex 的 `openai_base_url` 與 Claude Code 的 `ANTHROPIC_BASE_URL`（含 VS Code 的 `claudeCode.environmentVariables`）若已被其他工具佔用，Classroom App 只改這幾個路由位址，檔裡其他內容留著，並告訴學生原先指去哪裡，不顯示 key。Copilot 只寫 VCRouter，其他 provider 不動。VCRouter 只寫入一次，位址指到本機代理，之後常駐。開關不每次增刪這份清單。學生選了 VCRouter，請求才走 Classroom 態。選了 Native Copilot Models 時，開關管不到。第一次寫入後須完全退出 VS Code 再打開。
+_Avoid_: 依專案或單一對話切換, 把 Model Switch 叫做 BYOK Setup, 切回 Native 時還原 opencodex 或其他自訂供應商, 「我的模型」, 沒有 key 或空 Allowlist 仍進入 Classroom 態, Allowlist 再拉失敗就退回 Native 或寫成 Template 全集, 在客戶端自排模型順序, Codex 與 Claude Code 各切各的, 每次切換都重開 VS Code, 宣稱開關能強制改掉 Copilot 內建模型, 擴充退場後仍要學生裝擴充才切得了模型, 發現其他工具佔用 Codex 或 Claude 路由就拒絕接手, Claude 被佔用就跳過, 覆蓋時不告訴學生, 覆蓋 Copilot 時清掉其他 provider, 為 Cursor 做 Model Switch, 覆蓋時整份換掉 config.toml 或 Claude 設定
 
 **Host Full Restart**:
 完整退出目前 Host 並自動再開同一 Host，使 Host secret／pending BYOK 等需進程重生才穩定的狀態生效；亦用於 Clear Classroom Connection 因本機忙碌失敗後、再試清除之前；以及 BYOK 寫入後 VCRouter 模型集合有變、Copilot 要重新讀 `chatLanguageModels.json` 時。學生可見動作為「重新啟動」。硬承諾：按下後必須回來，不可只關不開卻仍稱重啟。
